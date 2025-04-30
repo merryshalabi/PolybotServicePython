@@ -1,4 +1,6 @@
 from pathlib import Path
+import random
+
 from matplotlib.image import imread, imsave
 
 
@@ -51,17 +53,68 @@ class Img:
             self.data[i] = res
 
     def rotate(self):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        for i in range(len(self.data)):
+            for j in range(i,len(self.data[0])):
+                self.data[i][j] , self.data[j][i] = self.data[j][i] , self.data[i][j]
+        for row in self.data:
+            row.reverse()
+
+    def rotate2(self):
+        self.rotate()
+        self.rotate()
+
 
     def salt_n_pepper(self):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        for i in range(len(self.data)):
+            for j in range(len(self.data[0])):
+                random_number = random.random()
+                if random_number < 0.2:
+                    self.data[i][j] = 255
+                elif random_number > 0.8:
+                    self.data[i][j] = 0
 
     def concat(self, other_img, direction='horizontal'):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        if direction=='horizontal':
+            if len(self.data) != len(other_img.data):
+                raise RuntimeError("images must have the same height")
+
+            new_data = []
+            for row_self, row_other in zip(self.data, other_img.data):
+                new_row = row_self + row_other
+                new_data.append(new_row)
+
+            self.data = new_data
+        elif direction=='vertical':
+            if len(self.data[0]) != len(other_img.data[0]):
+                raise RuntimeError("images must have the same width")
+
+            self.data = self.data + other_img.data
+
+        else:
+            raise RuntimeError("direction must be either 'horizontal' or 'vertical'")
+
 
     def segment(self):
-        # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        for i in range(len(self.data)):
+            for j in range(len(self.data[0])):
+                if self.data[i][j] > 100 :
+                    self.data[i][j]  = 255
+                else:
+                    self.data[i][j] = 0
+
+    def brighten(self, value=30):
+        for i in range(len(self.data)):
+            for j in range(len(self.data[0])):
+                self.data[i][j] = min(255, self.data[i][j] + value)
+
+    def darken(self, value=30):
+        for i in range(len(self.data)):
+            for j in range(len(self.data[0])):
+                self.data[i][j] = max(0, self.data[i][j] - value)
+
+    def invert(self):
+        for i in range(len(self.data)):
+            for j in range(len(self.data[0])):
+                self.data[i][j] = 255 - self.data[i][j]
+
+

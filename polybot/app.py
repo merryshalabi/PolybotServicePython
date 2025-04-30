@@ -1,3 +1,4 @@
+
 import flask
 from flask import request
 import os
@@ -22,6 +23,5 @@ def webhook():
 
 
 if __name__ == "__main__":
-    bot = Bot(TELEGRAM_BOT_TOKEN, TELEGRAM_APP_URL)
-
-    app.run(host='0.0.0.0', port=8443)
+   bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL)
+   app.run(host='0.0.0.0', port=8443)

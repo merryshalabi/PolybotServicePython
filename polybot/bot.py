@@ -75,4 +75,107 @@ class QuoteBot(Bot):
 
 
 class ImageProcessingBot(Bot):
-    pass
+    def __init__(self, token, telegram_chat_url):
+        super().__init__(token, telegram_chat_url)
+        self.media_groups = {}
+        self.new_users = set()
+        self.valid_filters = [
+            'concat','concat horizontal', 'concat vertical', 'blur', 'contour',
+            'rotate', 'segment', 'salt and pepper', 'rotate2',
+            'brighten', 'darken', 'invert'
+        ]
+
+    def handle_message(self, msg):
+        """Bot Main message handler for image processing"""
+        logger.info(f'Incoming message: {msg}')
+
+        try:
+            user_id = msg['from']['id']
+            if not hasattr(self, 'new_users'):
+                self.new_users = set()
+
+            if user_id not in self.new_users:
+                self.new_users.add(user_id)
+                if 'photo' not in msg:
+                    self.send_text(msg['chat']['id'], "Hi! How can I help you?")
+                    return
+
+            if 'photo' not in msg:
+                self.send_text(msg['chat']['id'], "Please send a photo with a caption to apply a filter")
+                return
+
+            caption = msg.get('caption', '')
+            caption =  caption.lower()
+            media_group_id = msg.get('media_group_id')
+
+            if caption and caption not in self.valid_filters:
+                self.send_text(msg['chat']['id'],f"Unknown filter '{caption}'. Please use one of: Blur, Contour, Rotate, Rotate2, Segment, Salt and pepper, Concat, Concat Horizontal, Concat Vertical, Brighten, Darken, Invert.")
+                return
+
+            if not caption and not media_group_id:
+                self.send_text(msg['chat']['id'], "Please send a filter name as a caption")
+                return
+
+            if media_group_id :
+                if media_group_id not in self.media_groups:
+                    if caption and caption.startswith('concat'):
+                        self.media_groups[media_group_id] = {
+                            "caption": caption,
+                            "messages": [msg]
+                        }
+                    else:
+                        self.send_text(msg['chat']['id'], f"The filter '{caption}' does not support multiple images.")
+                    return
+
+                else:
+                    self.media_groups[media_group_id]["messages"].append(msg)
+                    if len(self.media_groups[media_group_id]["messages"]) > 2:
+                        self.send_text(msg['chat']['id'], "Only two images are allowed for concat filter")
+
+                    if len(self.media_groups[media_group_id]["messages"]) == 2:
+                        data = self.media_groups.pop(media_group_id)
+                        msgs = data["messages"]
+                        stored_caption = data["caption"]
+                        path1 = self.download_user_photo({'photo': [msgs[0]['photo'][-1]], 'chat': msgs[0]['chat']})
+                        img1 = Img(path1)
+                        path2 = self.download_user_photo({'photo': [msgs[1]['photo'][-1]], 'chat': msgs[1]['chat']})
+                        img2 = Img(path2)
+
+                        if stored_caption in ['concat', 'concat horizontal']:
+                            img1.concat(img2)
+                        else:
+                            img1.concat(img2, direction='vertical')
+
+                        new_path = img1.save_img()
+                        self.send_photo(msg['chat']['id'], new_path)
+
+                        return
+
+            path = self.download_user_photo(msg)
+            img = Img(path)
+
+            if caption == 'blur':
+                img.blur()
+            elif caption == 'contour':
+                img.contour()
+            elif caption == 'rotate':
+                img.rotate()
+            elif caption == 'rotate2':
+                img.rotate2()
+            elif caption == 'segment':
+                img.segment()
+            elif caption == 'salt and pepper':
+                img.salt_n_pepper()
+            elif caption == 'brighten':
+                img.brighten()
+            elif caption == 'darken':
+                img.darken()
+            elif caption == 'invert':
+                img.invert()
+
+            new_path = img.save_img()
+            self.send_photo(msg['chat']['id'], new_path)
+
+        except Exception as e:
+            logger.error(f"Error while handling message : {e}")
+            self.send_text(msg['chat']['id'], "Something went wrong please try again")
