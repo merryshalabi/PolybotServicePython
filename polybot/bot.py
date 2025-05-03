@@ -79,6 +79,7 @@ class ImageProcessingBot(Bot):
         super().__init__(token, telegram_chat_url)
         self.media_groups = {}
         self.new_users = set()
+        self.processed_media_groups = set()
         self.valid_filters = [
             'concat','concat horizontal', 'concat vertical', 'blur', 'contour',
             'rotate', 'segment', 'salt and pepper', 'rotate2',
@@ -116,22 +117,35 @@ class ImageProcessingBot(Bot):
                 self.send_text(msg['chat']['id'], "Please send a filter name as a caption")
                 return
 
-            if media_group_id :
-                if media_group_id not in self.media_groups:
-                    if caption and caption.startswith('concat'):
+            if media_group_id:
+                if caption and caption not in ['concat', 'concat horizontal', 'concat vertical']:
+                    if media_group_id not in self.media_groups:
                         self.media_groups[media_group_id] = {
                             "caption": caption,
                             "messages": [msg]
                         }
-                    else:
                         self.send_text(msg['chat']['id'], f"The filter '{caption}' does not support multiple images.")
+                    else:
+                        self.media_groups[media_group_id]["messages"].append(msg)
+                    return
+
+                if media_group_id not in self.media_groups:
+                    self.media_groups[media_group_id] = {
+                        "caption": caption,
+                        "messages": [msg]
+                    }
                     return
 
                 else:
-                    self.media_groups[media_group_id]["messages"].append(msg)
-                    if len(self.media_groups[media_group_id]["messages"]) > 2:
-                        self.send_text(msg['chat']['id'], "Only two images are allowed for concat filter")
+                    stored_caption = self.media_groups[media_group_id]["caption"]
+                    if not stored_caption.startswith('concat'):
+                        return
 
+                    if len(self.media_groups[media_group_id]["messages"]) >= 2:
+                        self.send_text(msg['chat']['id'], "Only two images are allowed for concat filter")
+                        return
+
+                    self.media_groups[media_group_id]["messages"].append(msg)
                     if len(self.media_groups[media_group_id]["messages"]) == 2:
                         data = self.media_groups.pop(media_group_id)
                         msgs = data["messages"]
@@ -172,6 +186,10 @@ class ImageProcessingBot(Bot):
                 img.darken()
             elif caption == 'invert':
                 img.invert()
+            elif caption.startswith('concat'):
+                self.send_text(msg['chat']['id'], "Only two images are allowed for concat filter")
+                return
+
 
             new_path = img.save_img()
             self.send_photo(msg['chat']['id'], new_path)
