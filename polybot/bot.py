@@ -1,3 +1,4 @@
+import requests
 import telebot
 from loguru import logger
 import os
@@ -83,8 +84,35 @@ class ImageProcessingBot(Bot):
         self.valid_filters = [
             'concat','concat horizontal', 'concat vertical', 'blur', 'contour',
             'rotate', 'segment', 'salt and pepper', 'rotate2',
-            'brighten', 'darken', 'invert'
+            'brighten', 'darken', 'invert','detect'
         ]
+
+
+    def is_yolo_server_healthy(self):
+
+        url = "http://localhost:8081/health"  # Yolo Health Check Endpoint
+        try:
+            response = requests.get(url)
+            if response.status_code == 200 and response.json().get("status") == "ok":
+                return True
+        except requests.RequestException:
+            pass
+        return False
+
+
+    def detect_objects_in_image(self, image_path):
+        url = "http://localhost:8081/predict"  # Yolo Server Detection Endpoint
+
+        if not self.is_yolo_server_healthy():
+            return {"Yolo server is currently unavailable. Please try again later."}
+
+        with open(image_path, "rb") as image_file:
+            response = requests.post(url, files={"file": image_file})
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return {"Failed to detect objects in the image"}
+
 
     def handle_message(self, msg):
         """Bot Main message handler for image processing"""
@@ -105,12 +133,24 @@ class ImageProcessingBot(Bot):
                 self.send_text(msg['chat']['id'], "Please send a photo with a caption to apply a filter")
                 return
 
+
             caption = msg.get('caption', '')
             caption =  caption.lower()
             media_group_id = msg.get('media_group_id')
 
             if caption and caption not in self.valid_filters:
-                self.send_text(msg['chat']['id'],f"Unknown filter '{caption}'. Please use one of: Blur, Contour, Rotate, Rotate2, Segment, Salt and pepper, Concat, Concat Horizontal, Concat Vertical, Brighten, Darken, Invert.")
+                self.send_text(msg['chat']['id'],f"Unknown filter '{caption}'. Please use one of: Blur, Contour, Rotate, Rotate2, Segment, Salt and pepper, Concat, Concat Horizontal, Concat Vertical, Brighten, Darken, Invert, Detect.")
+                return
+
+            if caption == "detect":
+                path = self.download_user_photo(msg)
+                detection_result = self.detect_objects_in_image(path)
+
+                if "error" in detection_result:
+                    self.send_text(msg['chat']['id'], detection_result["error"])
+                else:
+                    detected_objects = ", ".join(detection_result.get("labels", []))
+                    self.send_text(msg['chat']['id'], f"Detected objects: {detected_objects}")
                 return
 
             if not caption and not media_group_id:
