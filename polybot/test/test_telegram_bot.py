@@ -50,8 +50,7 @@ class TestBot(unittest.TestCase):
 
     @patch('telebot.TeleBot')
     def setUp(self, mock_telebot):
-        yolo_server_url =os.environ['YOLO_SERVER_URL']
-        bot = ImageProcessingBot(token='bot_token', telegram_chat_url='webhook_url',yolo_server_url=yolo_server_url)
+        bot = ImageProcessingBot(token='bot_token', telegram_chat_url='webhook_url')
         bot.telegram_bot_client = mock_telebot.return_value
 
         mock_file = Mock()

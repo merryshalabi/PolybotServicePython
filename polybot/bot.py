@@ -76,7 +76,7 @@ class QuoteBot(Bot):
 
 
 class ImageProcessingBot(Bot):
-    def __init__(self, token, telegram_chat_url,yolo_server_url):
+    def __init__(self, token, telegram_chat_url,yolo_server_url=None):
         super().__init__(token, telegram_chat_url)
         self.media_groups = {}
         self.new_users = set()
