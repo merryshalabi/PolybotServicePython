@@ -8,7 +8,7 @@ app = flask.Flask(__name__)
 
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
-YOLO_SERVER_URL = os.environ.get('YOLO_SERVER_URL')
+YOLO_SERVER_URL =os.environ['YOLO_SERVER_URL']
 
 
 @app.route('/', methods=['GET'])
