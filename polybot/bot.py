@@ -9,7 +9,7 @@ from polybot.img_proc import Img
 
 class Bot:
 
-    def __init__(self, token, telegram_chat_url,yolo_server_url):
+    def __init__(self, token, telegram_chat_url):
         # create a new instance of the TeleBot class.
         # all communication with Telegram servers are done using self.telegram_bot_client
         self.telegram_bot_client = telebot.TeleBot(token)
@@ -77,7 +77,7 @@ class QuoteBot(Bot):
 
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url,yolo_server_url):
-        super().__init__(token, telegram_chat_url,yolo_server_url)
+        super().__init__(token, telegram_chat_url)
         self.media_groups = {}
         self.new_users = set()
         self.processed_media_groups = set()
@@ -87,6 +87,7 @@ class ImageProcessingBot(Bot):
             'brighten', 'darken', 'invert','detect'
         ]
         self.yolo_server_url = yolo_server_url
+
 
 
     def is_yolo_server_healthy(self):

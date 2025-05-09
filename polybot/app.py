@@ -4,11 +4,14 @@ from flask import request
 import os
 from bot import Bot, QuoteBot, ImageProcessingBot
 
+import os
+
+
 app = flask.Flask(__name__)
 
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
-YOLO_SERVER_URL =os.environ['YOLO_SERVER_URL']
+YOLO_SERVER_URL = os.environ['YOLO_SERVER_URL']
 
 
 @app.route('/', methods=['GET'])
@@ -24,5 +27,5 @@ def webhook():
 
 
 if __name__ == "__main__":
-   bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL,YOLO_SERVER_URL)
+   bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, YOLO_SERVER_URL)
    app.run(host='0.0.0.0', port=8443)
