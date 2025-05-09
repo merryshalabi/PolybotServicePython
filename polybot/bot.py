@@ -76,7 +76,7 @@ class QuoteBot(Bot):
 
 
 class ImageProcessingBot(Bot):
-    def __init__(self, token, telegram_chat_url):
+    def __init__(self, token, telegram_chat_url,yolo_server_url):
         super().__init__(token, telegram_chat_url)
         self.media_groups = {}
         self.new_users = set()
@@ -86,32 +86,38 @@ class ImageProcessingBot(Bot):
             'rotate', 'segment', 'salt and pepper', 'rotate2',
             'brighten', 'darken', 'invert','detect'
         ]
+        self.yolo_server_url = yolo_server_url
 
 
     def is_yolo_server_healthy(self):
 
-        url = "http://localhost:8081/health"  # Yolo Health Check Endpoint
+        if not self.yolo_server_url:
+            logger.error("YOLO_SERVER_URL is not set in environment variables.")
+            return False
+
+        health_url = f"{self.yolo_server_url}/health"
         try:
-            response = requests.get(url)
-            if response.status_code == 200 and response.json().get("status") == "ok":
-                return True
+            response = requests.get(health_url)
+            return response.status_code == 200 and response.json().get("status") == "ok"
         except requests.RequestException:
-            pass
-        return False
+            return False
 
 
     def detect_objects_in_image(self, image_path):
-        url = "http://localhost:8081/predict"  # Yolo Server Detection Endpoint
+        if not self.yolo_server_url:
+            return {"error": "YOLO server URL is not set in environment variables."}
+
+        detect_url = f"{self.yolo_server_url}/predict"
 
         if not self.is_yolo_server_healthy():
-            return {"Yolo server is currently unavailable. Please try again later."}
+            return {"error": "Yolo server is currently unavailable. Please try again later."}
 
         with open(image_path, "rb") as image_file:
-            response = requests.post(url, files={"file": image_file})
+            response = requests.post(detect_url, files={"file": image_file})
             if response.status_code == 200:
                 return response.json()
             else:
-                return {"Failed to detect objects in the image"}
+                return {"error": "Failed to detect objects in the image"}
 
 
     def handle_message(self, msg):
