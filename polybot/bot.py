@@ -153,6 +153,7 @@ class ImageProcessingBot(Bot):
                     self.send_text(msg['chat']['id'], f"Detected objects: {detected_objects}")
                 return
 
+
             if not caption and not media_group_id:
                 self.send_text(msg['chat']['id'], "Please send a filter name as a caption")
                 return
