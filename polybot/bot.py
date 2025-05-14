@@ -92,8 +92,7 @@ class ImageProcessingBot(Bot):
         self.yolo_server_url = yolo_server_url
         self.s3_bucket_name = os.environ.get("S3_BUCKET_NAME")
         self.s3_client = boto3.client("s3", region_name="eu-west-2")
-
-
+        logger.info(f"Loaded S3_BUCKET_NAME from env: {self.s3_bucket_name}")
 
     # def upload_to_s3(self, file_path):
     #     try:
@@ -122,9 +121,11 @@ class ImageProcessingBot(Bot):
 
         except NoCredentialsError:
             logger.error("❌ AWS credentials not found.")
+            logger.info(f"Attempting to upload {file_path} to bucket {self.s3_bucket_name}")
             return None
         except Exception as e:
             logger.exception(f"❌ Unexpected error during upload to S3: {e}")
+            logger.info(f"Attempting to upload {file_path} to bucket {self.s3_bucket_name}")
             return None
 
     def is_yolo_server_healthy(self):
