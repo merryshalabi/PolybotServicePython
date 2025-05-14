@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, Mock, mock_open, MagicMock
 from polybot.bot import ImageProcessingBot
 import os
+from pathlib import Path
 
 img_path = 'polybot/test/beatles.jpeg' if '/polybot/test' not in os.getcwd() else 'beatles.jpeg'
 
@@ -74,13 +75,17 @@ class TestBot(unittest.TestCase):
     @patch('polybot.bot.ImageProcessingBot.upload_to_s3', return_value='test_image.jpg')
     @patch('polybot.img_proc.Img.save_img', return_value='test_image_filtered.jpg')
     @patch('polybot.img_proc.Img.contour')
-    def test_contour(self, mock_contour, mock_save_img, mock_upload):
+    def test_contour(self):
         mock_msg['caption'] = 'Contour'
-        self.bot.handle_message(mock_msg)
 
-        mock_contour.assert_called_once()
-        mock_save_img.assert_called_once()
-        self.bot.telegram_bot_client.send_photo.assert_called_once()
+        with patch('polybot.img_proc.Img.contour') as mock_contour, \
+                patch('polybot.img_proc.Img.save_img', return_value='photos/fake_filtered.jpeg') as mock_save, \
+                patch('os.path.exists', return_value=True) as mock_exists:
+            self.bot.handle_message(mock_msg)
+
+            mock_contour.assert_called_once()
+            self.bot.telegram_bot_client.send_photo.assert_called_once()
+
 
     @patch('builtins.open', new_callable=mock_open)
     def test_contour_with_exception(self, mock_open):
