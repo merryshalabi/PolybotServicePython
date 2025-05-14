@@ -1,0 +1,20 @@
+[Unit]
+Description=Polybot Telegram Bot Service
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/PolybotServicePython
+Environment=TELEGRAM_BOT_TOKEN=8028485829:AAFluNJGS8m7Cr2fNu7JTqlaS5CTKUgh808
+Environment=BOT_APP_URL=https://hermit-valued-lioness.ngrok-free.app
+Environment=YOLO_SERVER_URL=http://10.0.2.165:8081
+Environment=S3_BUCKET_NAME=merry-polybot-images
+Environment=PYTHONPATH=/home/ubuntu/PolybotServicePython
+ExecStart=/home/ubuntu/PolybotServicePython/venv/bin/python3 /home/ubuntu/PolybotServicePython/polybot/app.py --port 8443
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

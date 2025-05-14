@@ -90,7 +90,7 @@ class ImageProcessingBot(Bot):
             'brighten', 'darken', 'invert','detect'
         ]
         self.yolo_server_url = yolo_server_url
-        self.s3_bucket_name = "merry-polybot-images"
+        self.s3_bucket_name = os.environ.get("S3_BUCKET_NAME")
         self.s3_client = boto3.client('s3')
 
 
