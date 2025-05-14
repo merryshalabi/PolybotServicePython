@@ -91,20 +91,40 @@ class ImageProcessingBot(Bot):
         ]
         self.yolo_server_url = yolo_server_url
         self.s3_bucket_name = os.environ.get("S3_BUCKET_NAME")
-        self.s3_client = boto3.client('s3')
+        self.s3_client = boto3.client("s3", region_name="eu-west-2")
 
+
+
+    # def upload_to_s3(self, file_path):
+    #     try:
+    #         image_name = os.path.basename(file_path)
+    #         self.s3_client.upload_file(file_path, self.s3_bucket_name, image_name)
+    #         logger.info(f"Uploaded {image_name} to S3 bucket {self.s3_bucket_name}")
+    #         return image_name
+    #     except NoCredentialsError:
+    #         logger.error("AWS credentials not found.")
+    #         return None
+    #     except Exception as e:
+    #         logger.error(f"Failed to upload to S3: {e}")
+    #         return None
 
     def upload_to_s3(self, file_path):
         try:
+            if not self.s3_bucket_name:
+                logger.error("S3_BUCKET_NAME not defined; cannot upload")
+                return None
+
             image_name = os.path.basename(file_path)
+            logger.info(f"Attempting to upload {file_path} as {image_name} to bucket {self.s3_bucket_name}")
             self.s3_client.upload_file(file_path, self.s3_bucket_name, image_name)
-            logger.info(f"Uploaded {image_name} to S3 bucket {self.s3_bucket_name}")
+            logger.success(f"✅ Uploaded {image_name} to S3 bucket {self.s3_bucket_name}")
             return image_name
+
         except NoCredentialsError:
-            logger.error("AWS credentials not found.")
+            logger.error("❌ AWS credentials not found.")
             return None
         except Exception as e:
-            logger.error(f"Failed to upload to S3: {e}")
+            logger.exception(f"❌ Unexpected error during upload to S3: {e}")
             return None
 
     def is_yolo_server_healthy(self):
@@ -122,23 +142,31 @@ class ImageProcessingBot(Bot):
 
 
     def detect_objects_in_image(self, image_name):
+        logger.info(f"Sending image name to YOLO server: {image_name}")
+
         if not self.yolo_server_url:
-            return {"error": "YOLO server URL is not set in environment variables."}
+            logger.error("YOLO_SERVER_URL is not set in environment variables.")
+            return {"error": "YOLO server URL is not configured"}
 
         detect_url = f"{self.yolo_server_url}/predict"
 
         if not self.is_yolo_server_healthy():
-            return {"error": "Yolo server is currently unavailable. Please try again later."}
+            logger.error("YOLO server is unhealthy or unreachable.")
+            return {"error": "YOLO server is currently unavailable"}
 
         try:
-            # Send only the image name in the JSON body
             response = requests.post(detect_url, json={"image_name": image_name})
+            logger.info(f"YOLO server response code: {response.status_code}")
             if response.status_code == 200:
+                logger.success("✅ YOLO detection success")
                 return response.json()
             else:
+                logger.warning(f"YOLO detection failed: {response.text}")
                 return {"error": "Failed to detect objects in the image"}
-        except Exception:
-            return {"error": "Failed to detect objects in the image"}
+
+        except Exception as e:
+            logger.exception(f"Exception when calling YOLO server: {e}")
+            return {"error": "Exception during YOLO detection"}
 
 
     def handle_message(self, msg):
