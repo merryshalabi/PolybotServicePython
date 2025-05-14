@@ -5,6 +5,9 @@ import os
 import time
 from telebot.types import InputFile
 from polybot.img_proc import Img
+import boto3
+from botocore.exceptions import NoCredentialsError
+
 
 
 class Bot:
@@ -87,8 +90,22 @@ class ImageProcessingBot(Bot):
             'brighten', 'darken', 'invert','detect'
         ]
         self.yolo_server_url = yolo_server_url
+        self.s3_bucket_name = os.environ.get("S3_BUCKET_NAME")
+        self.s3_client = boto3.client('s3')
 
 
+    def upload_to_s3(self, file_path):
+        try:
+            image_name = os.path.basename(file_path)
+            self.s3_client.upload_file(file_path, self.s3_bucket_name, image_name)
+            logger.info(f"Uploaded {image_name} to S3 bucket {self.s3_bucket_name}")
+            return image_name
+        except NoCredentialsError:
+            logger.error("AWS credentials not found.")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to upload to S3: {e}")
+            return None
 
     def is_yolo_server_healthy(self):
 
@@ -104,7 +121,7 @@ class ImageProcessingBot(Bot):
             return False
 
 
-    def detect_objects_in_image(self, image_path):
+    def detect_objects_in_image(self, image_name):
         if not self.yolo_server_url:
             return {"error": "YOLO server URL is not set in environment variables."}
 
@@ -113,12 +130,15 @@ class ImageProcessingBot(Bot):
         if not self.is_yolo_server_healthy():
             return {"error": "Yolo server is currently unavailable. Please try again later."}
 
-        with open(image_path, "rb") as image_file:
-            response = requests.post(detect_url, files={"file": image_file})
+        try:
+            # Send only the image name in the JSON body
+            response = requests.post(detect_url, json={"image_name": image_name})
             if response.status_code == 200:
                 return response.json()
             else:
                 return {"error": "Failed to detect objects in the image"}
+        except Exception:
+            return {"error": "Failed to detect objects in the image"}
 
 
     def handle_message(self, msg):
@@ -151,7 +171,12 @@ class ImageProcessingBot(Bot):
 
             if caption == "detect":
                 path = self.download_user_photo(msg)
-                detection_result = self.detect_objects_in_image(path)
+                image_name = self.upload_to_s3(path)
+                if not image_name:
+                    self.send_text(msg['chat']['id'], "Failed to upload image to cloud.")
+                    return
+
+                detection_result = self.detect_objects_in_image(image_name)
 
                 if "error" in detection_result:
                     self.send_text(msg['chat']['id'], detection_result["error"])
