@@ -7,6 +7,7 @@ from telebot.types import InputFile
 from polybot.img_proc import Img
 import boto3
 from botocore.exceptions import NoCredentialsError
+import uuid
 
 
 
@@ -36,24 +37,23 @@ class Bot:
         return 'photo' in msg
 
     def download_user_photo(self, msg):
-        """
-        Downloads the photos that sent to the Bot to `photos` directory (should be existed)
-        :return:
-        """
         if not self.is_current_msg_photo(msg):
             raise RuntimeError(f'Message content of type \'photo\' expected')
 
         file_info = self.telegram_bot_client.get_file(msg['photo'][-1]['file_id'])
         data = self.telegram_bot_client.download_file(file_info.file_path)
-        folder_name = file_info.file_path.split('/')[0]
 
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
+        # Generate a unique filename using UUID
+        ext = os.path.splitext(file_info.file_path)[1] or ".jpg"
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        folder_name = "photos"
+        os.makedirs(folder_name, exist_ok=True)
+        full_path = os.path.join(folder_name, unique_filename)
 
-        with open(file_info.file_path, 'wb') as photo:
+        with open(full_path, 'wb') as photo:
             photo.write(data)
 
-        return file_info.file_path
+        return full_path
 
     def send_photo(self, chat_id, img_path):
         if not os.path.exists(img_path):
@@ -265,7 +265,14 @@ class ImageProcessingBot(Bot):
 
 
             new_path = img.save_img()
+            # Upload filtered image to S3
+            uploaded_name = self.upload_to_s3(new_path)
+            if not uploaded_name:
+                self.send_text(msg['chat']['id'], "Failed to upload filtered image to cloud.")
+                return
+
             self.send_photo(msg['chat']['id'], new_path)
+
 
         except Exception as e:
             logger.error(f"Error while handling message : {e}")
