@@ -51,15 +51,17 @@
             echo "$PRIVATE_KEY" > key.pem
             chmod 600 key.pem
             ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP '
-            if [ -d "$REPO_DIR" ]; then
-              echo "Directory $REPO_DIR exists. Pulling latest changes..."
-              cd "$REPO_DIR"
-              git pull
-            else
-              echo "Cloning repository into $REPO_DIR..."
-              git clone https://github.com/${{ github.repository }}.git "$REPO_DIR"
-              cd "$REPO_DIR"
-            fi
+            REPO_DIR="PolybotServicePython"
+            
+              if [ -d "$REPO_DIR" ]; then
+                echo "Directory $REPO_DIR exists. Pulling latest changes..."
+                cd "$REPO_DIR"
+                git pull
+              else
+                echo "Cloning repository into $REPO_DIR..."
+                git clone https://github.com/${{ github.repository }}.git "$REPO_DIR"   
+                cd "$REPO_DIR"
+              fi
         
               echo "Installing and restarting polybot service..."
               sudo cp polybot.service /etc/systemd/system/polybot.service
