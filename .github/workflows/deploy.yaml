@@ -70,7 +70,7 @@
               fi
             
               source venv/bin/activate
-              pip install -r requirements.txt
+              pip install -r polybot/requirements.txt
             
               sudo systemctl daemon-reload
               sudo systemctl restart polybot.service
