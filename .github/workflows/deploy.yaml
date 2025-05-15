@@ -51,25 +51,27 @@
             echo "$PRIVATE_KEY" > key.pem
             chmod 600 key.pem
             ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP '
-              if [ ! -d "polybot" ]; then
-                echo "Cloning polybot repository..."
-                git clone https://github.com/${{ github.repository }}.git polybot
-              fi
-        
-              cd polybot
+            if [ -d "$REPO_DIR" ]; then
+              echo "Directory $REPO_DIR exists. Pulling latest changes..."
+              cd "$REPO_DIR"
               git pull
+            else
+              echo "Cloning repository into $REPO_DIR..."
+              git clone https://github.com/${{ github.repository }}.git "$REPO_DIR"
+              cd "$REPO_DIR"
+            fi
         
               echo "Installing and restarting polybot service..."
-              sudo cp deploy/polybot.service /etc/systemd/system/polybot.service
+              sudo cp polybot.service /etc/systemd/system/polybot.service
               # Optional: create virtual env and install
               if [ ! -d "venv" ]; then
                 echo "Creating Python virtual environment..."
                 python3 -m venv venv
               fi
-              
+            
               source venv/bin/activate
-              pip install -r polybot/requirements.txt
-  
+              pip install -r requirements.txt
+            
               sudo systemctl daemon-reload
               sudo systemctl restart polybot.service
             '
