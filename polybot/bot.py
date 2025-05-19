@@ -182,7 +182,7 @@ class ImageProcessingBot(Bot):
             if user_id not in self.new_users:
                 self.new_users.add(user_id)
                 if 'photo' not in msg:
-                    self.send_text(msg['chat']['id'], "Hi! How can I help you?")
+                    self.send_text(msg['chat']['id'], "Hiii! How can I help you?")
                     return
 
             if 'photo' not in msg:
