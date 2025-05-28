@@ -1,4 +1,4 @@
-name: Deploy Polybot
+name: Deploy Polybot (Dev)
 
 on:
   push:
@@ -13,7 +13,6 @@ jobs:
     env:
       PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
       EC2_IP: ${{ secrets.POLYBOT_EC2_IP_DEV }}
-      REPO: ${{ github.repository }}
     steps:
       - name: Set up SSH key
         run: |
@@ -23,28 +22,39 @@ jobs:
       - name: SSH and deploy
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP <<EOF
+            set -e
+
+            echo "[+] Installing Python and Git"
+            sudo apt update
+            sudo apt install -y python3 python3-pip python3-venv git
+
+            echo "[+] Cloning repo"
             REPO_DIR="PolybotServicePython"
+            REPO_URL="https://github.com/merryshalabi/PolybotServicePython.git"
             if [ -d "$REPO_DIR" ]; then
-              echo "Directory $REPO_DIR exists. Pulling latest changes..."
               cd "$REPO_DIR"
-              git pull
+              git checkout dev
+              git pull origin dev
             else
-              echo "Cloning repository into $REPO_DIR..."
-              git clone https://github.com/${REPO}.git "$REPO_DIR"
+              git clone --branch dev "$REPO_URL" "$REPO_DIR"
               cd "$REPO_DIR"
             fi
 
-            echo "Installing and restarting polybot service..."
-            sudo cp polybot-dev.service /etc/systemd/system/polybot-dev.service
-
-            if [ ! -d "venv" ]; then
-              echo "Creating Python virtual environment..."
-              python3 -m venv venv
-            fi
-
+            echo "[+] Setting up virtualenv"
+            python3 -m venv venv
             source venv/bin/activate
-            pip install -r polybot/requirements.txt
 
+            echo "[+] Installing requirements"
+            pip install --upgrade pip
+            pip install --break-system-packages -r polybot/requirements.txt
+
+            echo "[+] Installing polybot-dev.service"
+            sudo cp polybot/polybot-dev.service /etc/systemd/system/polybot-dev.service
+
+            echo "[+] Starting service"
             sudo systemctl daemon-reload
+            sudo systemctl enable polybot-dev.service
             sudo systemctl restart polybot-dev.service
+
+            echo "[✓] Deployment successful"
           EOF
