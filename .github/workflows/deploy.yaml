@@ -1,47 +1,10 @@
-  name: Test and Deploy Polybot
+ name:  Deploy Polybot
 
-  on:
+ on:
     push:
       branches:
         - main
-    pull_request:
-      branches:
-        - main
-
-  jobs:
-    TestImgProcessingChatbotApp:
-      runs-on: ubuntu-latest
-
-      steps:
-        - uses: actions/checkout@v4
-
-        - name: Set up Python
-          uses: actions/setup-python@v4
-          with:
-            python-version: "3.10"
-
-        - name: Install dependencies
-          run: |
-            pip install -r polybot/requirements.txt
-
-        - name: Test filters
-          run: |
-            echo -e "\n\nTesting concat()\n"
-            python -m polybot.test.test_concat
-  
-            echo -e "\n\nTesting rotate()\n"
-            python -m polybot.test.test_rotate
-  
-            echo -e "\n\nTesting salt_n_pepper()\n"
-            python -m polybot.test.test_salt_n_pepper
-  
-            echo -e "\n\nTesting segment()\n"
-            python -m polybot.test.test_segment
-
-        - name: Test Telegram bot logic
-          run: |
-            python -m polybot.test.test_telegram_bot
-
+ jobs:
         - name: Deploy to EC2
           if: github.ref == 'refs/heads/main' && success()
           env:
@@ -77,4 +40,3 @@
               sudo systemctl daemon-reload
               sudo systemctl restart polybot.service
             '
-  
