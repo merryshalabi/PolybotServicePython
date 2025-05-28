@@ -22,7 +22,7 @@ jobs:
 
       - name: SSH and deploy
         run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP << 'EOF'
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP <<EOF
             REPO_DIR="PolybotServicePython"
             if [ -d "$REPO_DIR" ]; then
               echo "Directory $REPO_DIR exists. Pulling latest changes..."
