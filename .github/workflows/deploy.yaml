@@ -1,42 +1,50 @@
- name:  Deploy Polybot
+name: Deploy Polybot
 
- on:
-    push:
-      branches:
-        - main
- jobs:
-      - name: Deploy to EC2
-        if: github.ref == 'refs/heads/main' && success()
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          EC2_IP: ${{ secrets.POLYBOT_EC2_IP }}
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-polybot:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    env:
+      PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      EC2_IP: ${{ secrets.POLYBOT_EC2_IP }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Set up SSH key
         run: |
           echo "$PRIVATE_KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP '
-          REPO_DIR="PolybotServicePython"
-          
+
+      - name: SSH and deploy
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP << 'EOF'
+            REPO_DIR="PolybotServicePython"
             if [ -d "$REPO_DIR" ]; then
               echo "Directory $REPO_DIR exists. Pulling latest changes..."
               cd "$REPO_DIR"
               git pull
             else
               echo "Cloning repository into $REPO_DIR..."
-              git clone https://github.com/${{ github.repository }}.git "$REPO_DIR"   
+              git clone https://github.com/${REPO}.git "$REPO_DIR"
               cd "$REPO_DIR"
             fi
-      
+
             echo "Installing and restarting polybot service..."
             sudo cp polybot.service /etc/systemd/system/polybot.service
-            # Optional: create virtual env and install
+
             if [ ! -d "venv" ]; then
               echo "Creating Python virtual environment..."
               python3 -m venv venv
             fi
-          
+
             source venv/bin/activate
             pip install -r polybot/requirements.txt
-          
+
             sudo systemctl daemon-reload
             sudo systemctl restart polybot.service
-          '
+          EOF
