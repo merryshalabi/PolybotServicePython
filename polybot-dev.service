@@ -1,5 +1,5 @@
 [Unit]
-Description=Polybot Telegram Bot Service
+Description=Polybot Telegram Bot Service Dev
 After=network.target
 
 [Service]
