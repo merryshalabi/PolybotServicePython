@@ -1,0 +1,60 @@
+name: Deploy Polybot
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy-polybot:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+    env:
+      PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      EC2_IP: ${{ secrets.POLYBOT_EC2_IP_DEV }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Set up SSH key
+        run: |
+          echo "$PRIVATE_KEY" > key.pem
+          chmod 600 key.pem
+
+      - name: SSH and deploy
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP "REPO='${REPO}' bash -s" <<'EOF'
+            set -e
+
+            echo "[+] Installing dependencies"
+            sudo apt update
+            sudo apt install -y python3 python3-pip python3-venv git
+
+            echo "[+] Cloning or updating repo"
+            REPO_DIR="PolybotServicePython"
+            REPO_URL="https://github.com/${REPO}.git"
+
+            if [ -d "$REPO_DIR" ]; then
+              cd "$REPO_DIR"
+              git checkout dev
+              git pull origin dev
+            else
+              git clone --branch dev "$REPO_URL" "$REPO_DIR"
+              cd "$REPO_DIR"
+            fi
+
+            echo "[+] Setting up virtualenv"
+            python3 -m venv venv
+            source venv/bin/activate
+
+            echo "[+] Installing requirements"
+            pip install --upgrade pip
+            pip install --break-system-packages -r polybot/requirements.txt
+
+            echo "[+] Copying systemd service"
+            sudo cp polybot-dev.service /etc/systemd/system/polybot-dev.service
+
+            echo "[+] Restarting service"
+            sudo systemctl daemon-reload
+            sudo systemctl enable polybot-dev.service
+            sudo systemctl restart polybot-dev.service
+          EOF
