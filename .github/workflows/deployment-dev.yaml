@@ -57,4 +57,33 @@ jobs:
             sudo systemctl daemon-reload
             sudo systemctl enable polybot-dev.service
             sudo systemctl restart polybot-dev.service
+          
+            echo "[+] Setting up OpenTelemetry Collector"
+
+            if ! command -v otelcol &> /dev/null; then
+              echo "📦 Installing otelcol..."
+              curl -LO https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.97.0/otelcol_0.97.0_linux_amd64.deb
+              sudo dpkg -i otelcol_0.97.0_linux_amd64.deb
+            else
+              echo "✅ otelcol already installed."
+            fi
+
+            echo "⚙️ Updating OpenTelemetry config if needed"
+            if ! cmp -s otelcol-config.yaml /etc/otelcol/config.yaml; then
+              sudo cp otelcol-config.yaml /etc/otelcol/config.yaml
+              sudo systemctl restart otelcol
+              sleep 5
+            else
+              echo "✅ Config already up to date"
+            fi
+
+            sudo systemctl enable otelcol
+
+            echo "🔍 Verifying metrics endpoint..."
+            if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
+              echo "✅ OpenTelemetry metrics are exposed"
+            else
+              echo "⚠️ Metrics not available"
+              sudo systemctl status otelcol --no-pager
+            fi
           EOF
