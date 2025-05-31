@@ -14,6 +14,7 @@ BOT_APP_URL = os.environ['BOT_APP_URL']
 YOLO_SERVER_URL = os.environ['YOLO_SERVER_URL']
 
 
+
 @app.route('/', methods=['GET'])
 def index():
     return 'Ok'
