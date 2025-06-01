@@ -6,7 +6,7 @@ After=network.target
 User=ubuntu
 WorkingDirectory=/home/ubuntu/PolybotServicePython
 Environment=TELEGRAM_BOT_TOKEN=8171040591:AAEAHccWawOHFcBMZEe4Ebyg6UF0VBELQMQ
-Environment=BOT_APP_URL=https://35.178.189.155/dev
+Environment=BOT_APP_URL=https://13.40.91.168/dev
 Environment=YOLO_SERVER_URL=http://10.0.2.8:8081
 Environment=S3_BUCKET_NAME=merry-dev-bucket
 Environment=PYTHONPATH=/home/ubuntu/PolybotServicePython
