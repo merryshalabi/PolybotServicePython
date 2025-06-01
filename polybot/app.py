@@ -18,6 +18,10 @@ YOLO_SERVER_URL = os.environ['YOLO_SERVER_URL']
 def index():
     return 'Ok'
 
+@app.route('/health', methods=['GET'])
+def health():
+    return 'ok', 200
+
 
 @app.route(f'/{TELEGRAM_BOT_TOKEN}/', methods=['POST'])
 def webhook():
