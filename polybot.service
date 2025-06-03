@@ -6,7 +6,7 @@ After=network.target
 User=ubuntu
 WorkingDirectory=/home/ubuntu/PolybotServicePython
 Environment=TELEGRAM_BOT_TOKEN=8028485829:AAFluNJGS8m7Cr2fNu7JTqlaS5CTKUgh808
-Environment=BOT_APP_URL=https://13.40.91.168/prod
+Environment=BOT_APP_URL=https://merry-bot.fursa.click/prod
 Environment=YOLO_SERVER_URL=http://10.0.2.165:8081
 Environment=S3_BUCKET_NAME=merry-polybot-images
 Environment=PYTHONPATH=/home/ubuntu/PolybotServicePython
