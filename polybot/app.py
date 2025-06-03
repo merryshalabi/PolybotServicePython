@@ -11,7 +11,7 @@ TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
 YOLO_SERVER_URL = os.environ['YOLO_SERVER_URL']
 
-# ✅ INIT BOT HERE — before any route
+# INIT BOT HERE — before any route
 bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, yolo_server_url=YOLO_SERVER_URL)
 
 @app.route('/', methods=['GET'])
@@ -22,7 +22,7 @@ def index():
 def health():
     return 'ok', 200
 
-# ✅ Route without trailing AND with trailing slash
+# Route without trailing AND with trailing slash
 @app.route(f'/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
 @app.route(f'/{TELEGRAM_BOT_TOKEN}/', methods=['POST'])
 def webhook():
