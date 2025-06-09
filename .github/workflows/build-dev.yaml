@@ -12,10 +12,6 @@ jobs:
       image: ${{ steps.export.outputs.image }}
 
     steps:
-      - name: Export dummy image name
-        id: export
-        run: echo "image=hello-world" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@v4
 
       - name: Log in to DockerHub
