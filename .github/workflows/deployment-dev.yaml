@@ -1,12 +1,12 @@
 name: Polybot Deploy Dev
 
+
 on:
   workflow_call:
     inputs:
       image:
         required: true
         type: string
-
     secrets:
       EC2_SSH_KEY:
         required: true
@@ -24,19 +24,21 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    outputs:
+      deploy_image: ${{ steps.show.outputs.image }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup SSH key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: Debug - print image
+      - name: Debug - print and output image
+        id: show
         run: |
           echo "🚀 Image received by deploy: ${{ inputs.image }}"
+          echo "image=${{ inputs.image }}" >> $GITHUB_OUTPUT
 
       - name: SSH and deploy using Docker Compose
         run: |
