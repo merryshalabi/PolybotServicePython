@@ -70,20 +70,35 @@ jobs:
           echo "🔧 Built image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
-          echo "image=$IMAGE_NAME" >> "${GITHUB_OUTPUT}"
+          echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Debug build output
+        run: |
+          echo "✅ Image from build: ${{ steps.build-image.outputs.image }}"
+
+
+
+  debug-image:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo image before deploy
+        run: |
+         echo "🚚 About to send image: ${{ needs.build.outputs.image }}"
+
+
 
   deploy:
     needs: build
-    uses: merryshalabi/PolybotServicePython/.github/workflows/deployment-dev.yaml@dev
+    uses: ./.github/workflows/deployment-dev.yaml
     with:
       image: ${{ needs.build.outputs.image }}
+    secrets:
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      POLYBOT_EC2_IP_DEV: ${{ secrets.POLYBOT_EC2_IP_DEV }}
+      TELEGRAM_BOT_TOKEN_DEV: ${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
+      BOT_APP_URL_DEV: ${{ secrets.BOT_APP_URL_DEV }}
+      YOLO_SERVER_URL_DEV: ${{ secrets.YOLO_SERVER_URL_DEV }}
+      S3_BUCKET_NAME_DEV: ${{ secrets.S3_BUCKET_NAME_DEV }}
 
-
-#    secrets:
-#      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-#      POLYBOT_EC2_IP_DEV: ${{ secrets.POLYBOT_EC2_IP_DEV }}
-#      TELEGRAM_BOT_TOKEN_DEV: ${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
-#      BOT_APP_URL_DEV: ${{ secrets.BOT_APP_URL_DEV }}
-#      YOLO_SERVER_URL_DEV: ${{ secrets.YOLO_SERVER_URL_DEV }}
-#      S3_BUCKET_NAME_DEV: ${{ secrets.S3_BUCKET_NAME_DEV }}
 
