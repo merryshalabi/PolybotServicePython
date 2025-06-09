@@ -24,7 +24,7 @@ jobs:
           echo "🔧 Image name: $IMG_NAME"
           docker build -t $IMG_NAME .
           docker push $IMG_NAME
-          echo "image=$IMG_NAME" >> $GITHUB_OUTPUT
+          echo "::set-output name=image::$IMG_NAME"
 
   deploy:
     needs: build
