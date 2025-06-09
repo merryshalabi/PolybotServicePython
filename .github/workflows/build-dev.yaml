@@ -1,0 +1,60 @@
+name: Polybot Build Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.save-image.outputs.image }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          echo "🔧 Built image: $IMAGE_NAME"
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+          
+          # Save to file for artifact
+          echo "$IMAGE_NAME" > image_name.txt
+
+      - name: Save image name as output
+        id: save-image
+        run: |
+          IMAGE_NAME=$(cat image_name.txt)
+          echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "✅ Saved image output: $IMAGE_NAME"
+
+      - name: Upload image name as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-name
+          path: image_name.txt
+
+      - name: Debug outputs
+        run: |
+          echo "🔍 Step output: ${{ steps.save-image.outputs.image }}"
+          echo "🔍 File contents:"
+          cat image_name.txt
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deployment-dev.yaml
+    with:
+      image: ${{ needs.build.outputs.image }}
+    secrets:
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      POLYBOT_EC2_IP_DEV: ${{ secrets.POLYBOT_EC2_IP_DEV }}
+      TELEGRAM_BOT_TOKEN_DEV: ${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
+      BOT_APP_URL_DEV: ${{ secrets.BOT_APP_URL_DEV }}
+      YOLO_SERVER_URL_DEV: ${{ secrets.YOLO_SERVER_URL_DEV }}
+      S3_BUCKET_NAME_DEV: ${{ secrets.S3_BUCKET_NAME_DEV }}
