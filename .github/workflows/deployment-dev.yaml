@@ -8,17 +8,17 @@ on:
         type: string
     secrets:
       EC2_SSH_KEY:
-        required: true
+        required: false
       POLYBOT_EC2_IP_DEV:
-        required: true
+        required: false
       TELEGRAM_BOT_TOKEN_DEV:
-        required: true
+        required: false
       BOT_APP_URL_DEV:
-        required: true
+        required: false
       YOLO_SERVER_URL_DEV:
-        required: true
+        required: false
       S3_BUCKET_NAME_DEV:
-        required: true
+        required: false
 
 jobs:
   deploy:
