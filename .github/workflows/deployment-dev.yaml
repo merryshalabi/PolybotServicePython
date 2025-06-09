@@ -6,20 +6,19 @@ on:
       image:
         required: true
         type: string
-
-#    secrets:
-#      EC2_SSH_KEY:
-#        required: false
-#      POLYBOT_EC2_IP_DEV:
-#        required: false
-#      TELEGRAM_BOT_TOKEN_DEV:
-#        required: false
-#      BOT_APP_URL_DEV:
-#        required: false
-#      YOLO_SERVER_URL_DEV:
-#        required: false
-#      S3_BUCKET_NAME_DEV:
-#        required: false
+    secrets:
+      EC2_SSH_KEY:
+        required: true
+      POLYBOT_EC2_IP_DEV:
+        required: true
+      TELEGRAM_BOT_TOKEN_DEV:
+        required: true
+      BOT_APP_URL_DEV:
+        required: true
+      YOLO_SERVER_URL_DEV:
+        required: true
+      S3_BUCKET_NAME_DEV:
+        required: true
 
 jobs:
   deploy:
@@ -47,9 +46,9 @@ jobs:
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
           echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
-
+      
           scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
-
+      
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
             echo "📁 Cloning or updating repo"
             if [ -d "PolybotServicePython" ]; then
