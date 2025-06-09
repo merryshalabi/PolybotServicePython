@@ -1,4 +1,4 @@
-name: Polybot Build Dev
+name: Polybot build Dev
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
       - name: Log in to DockerHub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker image
+      - name: build and push Docker image
         id: build-image
         run: |
           IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
