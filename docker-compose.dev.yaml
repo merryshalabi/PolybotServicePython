@@ -7,10 +7,10 @@ services:
       - "8000:8000"
     env_file: .env
 
-  yolo:
-    image: yourdockerhub/yolo-dev:${YOLO_VERSION}
-    ports:
-      - "8081:8081"
+#  yolo:
+#    image: yourdockerhub/yolo-dev:${YOLO_VERSION}
+#    ports:
+#      - "8081:8081"
 
   otelcol:
     image: otel/opentelemetry-collector-contrib:latest
