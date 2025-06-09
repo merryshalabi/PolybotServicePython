@@ -20,7 +20,7 @@ jobs:
       - name: Build and push Docker image
         id: set
         run: |
-          IMG_NAME=$merryshalabi/polybot-dev:${{ github.run_number }}
+          IMG_NAME=merryshalabi/polybot-dev:${{ github.run_number }}
           echo "🔧 Image name: $IMG_NAME"
           docker build -t $IMG_NAME .
           docker push $IMG_NAME
