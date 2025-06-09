@@ -36,25 +36,18 @@ jobs:
 
       - name: Debug - print image
         run: |
-          echo "🚀 Image received by deploy (base64): ${{ inputs.image }}"
-          echo "Decoded image:"
-          echo "${{ inputs.image }}" | base64 --decode
-          echo "${{ inputs.image }}" | base64 --decode || echo "<Decode failed>"
-
-
-
+          echo "🚀 Image received by deploy: ${{ inputs.image }}"
 
       - name: SSH and deploy using Docker Compose
         run: |
-          IMAGE=$(echo "${{ inputs.image }}" | base64 --decode)
-          echo "IMG_NAME=$IMAGE" > .env
+          echo "IMG_NAME=${{ inputs.image }}" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
           echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
-
+      
           scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
-
+      
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
             echo "📁 Cloning or updating repo"
             if [ -d "PolybotServicePython" ]; then
@@ -65,8 +58,7 @@ jobs:
               git clone --branch dev https://github.com/${{ github.repository }} PolybotServicePython
               cd PolybotServicePython
             fi
-          
-                    
+      
             echo "[+] Checking for Docker"
             if ! command -v docker &> /dev/null; then
               echo "📦 Installing Docker..."
@@ -77,11 +69,11 @@ jobs:
             else
               echo "✅ Docker already installed"
             fi
-
+      
             echo "🐳 Running Docker Compose for Dev"
             docker compose -f docker-compose.dev.yaml pull
             docker compose -f docker-compose.dev.yaml up -d --remove-orphans
-
+      
             echo "🔍 Verifying OpenTelemetry metrics endpoint"
             if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
               echo "✅ OpenTelemetry metrics are exposed"
