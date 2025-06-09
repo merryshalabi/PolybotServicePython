@@ -1,0 +1,32 @@
+name: Polybot Build Prod
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.set.outputs.image }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
+        id: set
+        run: |
+          IMG_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod:${{ github.run_number }}
+          docker build -t $IMG_NAME .
+          docker push $IMG_NAME
+          echo "image=$IMG_NAME" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy-prod.yaml
+    with:
+      image: ${{ needs.build.outputs.image }}

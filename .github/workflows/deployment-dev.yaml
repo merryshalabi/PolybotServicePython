@@ -1,89 +1,67 @@
-name: Deploy Polybot
+name: Polybot Deploy Dev
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
 
 jobs:
-  deploy-polybot:
-    name: Deploy to EC2
+  deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
-    env:
-      PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-      EC2_IP: ${{ secrets.POLYBOT_EC2_IP_DEV }}
-      REPO: ${{ github.repository }}
+
     steps:
-      - name: Set up SSH key
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
         run: |
-          echo "$PRIVATE_KEY" > key.pem
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: SSH and deploy
+      - name: SSH and deploy using Docker Compose
         run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$EC2_IP "REPO='${REPO}' bash -s" <<'EOF'
-            set -e
+          echo "IMG_NAME=${{ inputs.image }}" > .env
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
+          echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
+          echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
+          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
 
-            echo "[+] Installing dependencies"
-            sudo apt update
-            sudo apt install -y python3 python3-pip python3-venv git
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
 
-            echo "[+] Cloning or updating repo"
-            REPO_DIR="PolybotServicePython"
-            REPO_URL="https://github.com/${REPO}.git"
-
-            if [ -d "$REPO_DIR" ]; then
-              cd "$REPO_DIR"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
+            echo "📁 Cloning or updating repo"
+            if [ -d "PolybotServicePython" ]; then
+              cd PolybotServicePython
               git checkout dev
               git pull origin dev
             else
-              git clone --branch dev "$REPO_URL" "$REPO_DIR"
-              cd "$REPO_DIR"
+              git clone --branch dev https://github.com/${{ github.repository }} PolybotServicePython
+              cd PolybotServicePython
             fi
-
-            echo "[+] Setting up virtualenv"
-            python3 -m venv venv
-            source venv/bin/activate
-
-            echo "[+] Installing requirements"
-            pip install --upgrade pip
-            pip install --break-system-packages -r polybot/requirements.txt
-
-            echo "[+] Copying systemd service"
-            sudo cp polybot-dev.service /etc/systemd/system/polybot-dev.service
-
-            echo "[+] Restarting service"
-            sudo systemctl daemon-reload
-            sudo systemctl enable polybot-dev.service
-            sudo systemctl restart polybot-dev.service
           
-            echo "[+] Setting up OpenTelemetry Collector"
-
-            if ! command -v otelcol &> /dev/null; then
-              echo "📦 Installing otelcol..."
-              curl -LO https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.97.0/otelcol_0.97.0_linux_amd64.deb
-              sudo dpkg -i otelcol_0.97.0_linux_amd64.deb
+                    
+            echo "[+] Checking for Docker"
+            if ! command -v docker &> /dev/null; then
+              echo "📦 Installing Docker..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sh get-docker.sh
+              sudo usermod -aG docker $USER
+              newgrp docker
             else
-              echo "✅ otelcol already installed."
+              echo "✅ Docker already installed"
             fi
 
-            echo "⚙️ Updating OpenTelemetry config if needed"
-            if ! cmp -s otelcol-config.yaml /etc/otelcol/config.yaml; then
-              sudo cp otelcol-config.yaml /etc/otelcol/config.yaml
-              sudo systemctl restart otelcol
-              sleep 5
-            else
-              echo "✅ Config already up to date"
-            fi
+            echo "🐳 Running Docker Compose for Dev"
+            docker compose -f docker-compose.dev.yaml pull
+            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
 
-            sudo systemctl enable otelcol
-
-            echo "🔍 Verifying metrics endpoint..."
+            echo "🔍 Verifying OpenTelemetry metrics endpoint"
             if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
               echo "✅ OpenTelemetry metrics are exposed"
             else
               echo "⚠️ Metrics not available"
-              sudo systemctl status otelcol --no-pager
+              docker logs $(docker ps -qf "name=otelcol")
             fi
           EOF
