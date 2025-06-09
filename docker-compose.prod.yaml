@@ -12,8 +12,10 @@ services:
 #    ports:
 #      - "8081:8081"
 
+
   otelcol:
     image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config", "/etc/otelcol/config.yaml"]
     ports:
       - "8889:8889"
     volumes:
@@ -23,3 +25,5 @@ services:
     environment:
       - HOST_PROC=/hostfs/proc
       - HOST_SYS=/hostfs/sys
+
+
