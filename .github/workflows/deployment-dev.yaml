@@ -18,6 +18,7 @@ on:
       YOLO_SERVER_URL_DEV:
         required: true
       S3_BUCKET_NAME_DEV:
+        required: true
 
 jobs:
   deploy:
