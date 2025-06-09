@@ -5,14 +5,11 @@ on:
     branches:
       - dev
 
-env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ env.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+      image: ${{ steps.set-output.outputs.image }}
 
     steps:
       - uses: actions/checkout@v4
@@ -22,14 +19,23 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE_NAME=${{ env.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
           echo "🔧 Built image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
+          
+          # Store in environment for next step
+          echo "BUILT_IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+
+      - name: Set output
+        id: set-output
+        run: |
+          echo "image=$BUILT_IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "✅ Setting output: image=$BUILT_IMAGE_NAME"
 
       - name: Debug output
         run: |
-          echo "✅ Image name: ${{ env.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}"
+          echo "✅ Image from output: ${{ steps.set-output.outputs.image }}"
 
   deploy:
     needs: build

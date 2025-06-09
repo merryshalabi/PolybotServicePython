@@ -1,61 +1,41 @@
-name: Polybot Deploy Dev
+name: Polybot Build Dev
 
 on:
-  workflow_call:
-    inputs:
-      image:
-        required: true
-        type: string
-
-    secrets:
-      EC2_SSH_KEY:
-        required: true
-      POLYBOT_EC2_IP_DEV:
-        required: true
-      TELEGRAM_BOT_TOKEN_DEV:
-        required: true
-      BOT_APP_URL_DEV:
-        required: true
-      YOLO_SERVER_URL_DEV:
-        required: true
-      S3_BUCKET_NAME_DEV:
-        required: true
+  push:
+    branches:
+      - dev
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup SSH key
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
         run: |
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          echo "🔧 Built image: $IMAGE_NAME"
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+          
+          # Save image name to file for next step
+          echo "$IMAGE_NAME" > image_name.txt
+
+      - name: Deploy to Dev
+        run: |
+          IMAGE_NAME=$(cat image_name.txt)
+          echo "🚀 Deploying image: $IMAGE_NAME"
+          
+          # Setup SSH key
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
-
-      - name: Debug - print ALL inputs and context
-        run: |
-          echo "🚀 Image received by deploy: '${{ inputs.image }}'"
-          echo "🔍 Length of image string: ${#IMAGE_VAR}"
-          echo "🔍 Is image empty? $([ -z '${{ inputs.image }}' ] && echo 'YES' || echo 'NO')"
-          echo "🔍 Inputs context:"
-          echo "IMAGE_INPUT=${{ inputs.image }}"
-          echo "🔍 GitHub context:"
-          echo "GITHUB_ACTOR=${{ github.actor }}"
-          echo "GITHUB_RUN_NUMBER=${{ github.run_number }}"
-        env:
-          IMAGE_VAR: ${{ inputs.image }}
-
-      - name: Create .env file and deploy
-        run: |
-          echo "Creating .env file..."
-          if [ -z "${{ inputs.image }}" ]; then
-            echo "❌ ERROR: Image input is empty!"
-            exit 1
-          fi
           
-          echo "IMG_NAME=${{ inputs.image }}" > .env
+          # Create .env file
+          echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
           echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
@@ -63,9 +43,8 @@ jobs:
           
           echo "📝 Contents of .env file:"
           cat .env
-
-      - name: SSH and deploy using Docker Compose
-        run: |
+          
+          # Deploy using SSH
           scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
 
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
@@ -102,6 +81,6 @@ jobs:
               echo "✅ OpenTelemetry metrics are exposed"
             else
               echo "⚠️ Metrics not available"
-              docker logs $(docker ps -qf "name=otelcol")
+              docker logs $(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
             fi
           EOF
