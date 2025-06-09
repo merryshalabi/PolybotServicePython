@@ -14,7 +14,6 @@ services:
 
   otelcol:
     image: otel/opentelemetry-collector-contrib:latest
-    network_mode: host
     ports:
       - "8889:8889"
     volumes:
