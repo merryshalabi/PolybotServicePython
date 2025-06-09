@@ -4,10 +4,11 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy only requirements first for caching benefits
-COPY polybot/requirements.txt .
+COPY PolybotServicePython/polybot/requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r polybot/requirements.txt
+RUN pip install --no-cache-dir -r PolybotServicePython/polybot/requirements.txt
+
 
 # Copy the full project
 COPY . .
