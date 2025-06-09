@@ -12,6 +12,7 @@ services:
 #    ports:
 #      - "8081:8081"
 
+
   otelcol:
     image: otel/opentelemetry-collector-contrib:latest
     command: ["--config", "/etc/otelcol/config.yaml"]
