@@ -39,6 +39,8 @@ jobs:
           echo "🚀 Image received by deploy (base64): ${{ inputs.image }}"
           echo "Decoded image:"
           echo "${{ inputs.image }}" | base64 --decode
+          echo "${{ inputs.image }}" | base64 --decode || echo "<Decode failed>"
+
 
 
 
