@@ -74,9 +74,11 @@ jobs:
 
   deploy:
     needs: build
-    uses: ./.github/workflows/deployment-dev.yaml
+    uses: merryshalabi/PolybotServicePython/.github/workflows/deployment-dev.yaml@dev
     with:
       image: ${{ needs.build.outputs.image }}
+
+
 #    secrets:
 #      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 #      POLYBOT_EC2_IP_DEV: ${{ secrets.POLYBOT_EC2_IP_DEV }}
