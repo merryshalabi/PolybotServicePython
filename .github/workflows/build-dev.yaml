@@ -5,11 +5,14 @@ on:
     branches:
       - dev
 
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.build-image.outputs.image }}
+      image: ${{ env.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,38 +21,15 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
-        id: build-image
         run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          IMAGE_NAME=${{ env.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
           echo "🔧 Built image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
-          
-          # Try multiple methods to set the output
-          echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
-          echo "🎯 Added to GITHUB_OUTPUT: image=$IMAGE_NAME"
-          
-          # Also try environment variable method
-          echo "BUILT_IMAGE=$IMAGE_NAME" >> "$GITHUB_ENV"
 
-      - name: Debug and verify output
+      - name: Debug output
         run: |
-          echo "✅ Image from build step: ${{ steps.build-image.outputs.image }}"
-          echo "✅ Job output will be: ${{ steps.build-image.outputs.image }}"
-          echo "✅ Environment variable: $BUILT_IMAGE"
-          
-          echo "📋 Contents of GITHUB_OUTPUT file:"
-          cat "$GITHUB_OUTPUT" || echo "❌ GITHUB_OUTPUT file not found"
-          
-          echo "📋 Contents of GITHUB_ENV file:"
-          cat "$GITHUB_ENV" || echo "❌ GITHUB_ENV file not found"
-          
-          # Verify the file exists and has content
-          if [ -s "$GITHUB_OUTPUT" ]; then
-            echo "✅ GITHUB_OUTPUT file has content"
-          else
-            echo "❌ GITHUB_OUTPUT file is empty or doesn't exist"
-          fi
+          echo "✅ Image name: ${{ env.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}"
 
   deploy:
     needs: build
