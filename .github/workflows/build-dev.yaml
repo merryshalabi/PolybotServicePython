@@ -21,6 +21,7 @@ jobs:
         id: set
         run: |
           IMG_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          echo "🔧 Image name: $IMG_NAME"
           docker build -t $IMG_NAME .
           docker push $IMG_NAME
           echo "image=$IMG_NAME" >> "$GITHUB_OUTPUT"
