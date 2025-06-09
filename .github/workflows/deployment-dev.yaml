@@ -36,12 +36,16 @@ jobs:
 
       - name: Debug - print image
         run: |
-          echo "🚀 Image received by deploy: ${{ inputs.image }}"
+          echo "🚀 Image received by deploy (base64): ${{ inputs.image }}"
+          echo "Decoded image:"
+          echo "${{ inputs.image }}" | base64 --decode
+
 
 
       - name: SSH and deploy using Docker Compose
         run: |
-          echo "IMG_NAME=${{ inputs.image }}" > .env
+          IMAGE=$(echo "${{ inputs.image }}" | base64 --decode)
+          echo "IMG_NAME=$IMAGE" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
           echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
