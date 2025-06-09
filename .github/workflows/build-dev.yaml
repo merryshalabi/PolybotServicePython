@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.export.outputs.image }}
+      image: ${{ steps.build.outputs.image }}
 
     steps:
       - uses: actions/checkout@v4
@@ -20,15 +20,11 @@ jobs:
       - name: Build and push Docker image
         id: build
         run: |
-          IMAGE_NAME=merryshalabi/polybot-dev:${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
           echo "🔧 Image name: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
-          echo "$IMAGE_NAME" > image.txt
-
-      - name: Export image name
-        id: export
-        run: echo "image=$(cat image.txt)" >> $GITHUB_OUTPUT
+          echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
