@@ -7,6 +7,27 @@ on:
         required: true
         type: string
 
+    secrets:
+      EC2_SSH_KEY:
+        required: true
+      POLYBOT_EC2_IP:
+        required: true
+      TELEGRAM_BOT_TOKEN_PROD:
+        required: true
+      BOT_APP_URL_PROD:
+        required: true
+      YOLO_SERVER_URL_PROD:
+        required: true
+      S3_BUCKET_NAME_PROD:
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      image:
+        required: true
+        type: string
+        description: 'Docker image name to deploy'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,20 +36,51 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Download image name artifact (fallback)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-name
+          path: ./
+        continue-on-error: true
+
       - name: Setup SSH key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: SSH and deploy to PROD
+      - name: Determine image name
+        id: get-image
         run: |
-          echo "IMG_NAME=${{ inputs.image }}" > .env
+          if [ -n "${{ inputs.image }}" ]; then
+            IMAGE_NAME="${{ inputs.image }}"
+            echo "✅ Using input image: $IMAGE_NAME"
+          elif [ -f "image_name.txt" ]; then
+            IMAGE_NAME=$(cat image_name.txt)
+            echo "✅ Using artifact image: $IMAGE_NAME"
+          else
+            echo "❌ No image name found!"
+            exit 1
+          fi
+
+          echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "🚀 Final image name: $IMAGE_NAME"
+
+      - name: Create .env file
+        run: |
+          IMAGE_NAME="${{ steps.get-image.outputs.image }}"
+
+          echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_PROD }}" >> .env
           echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_PROD }}" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_PROD }}" >> .env
 
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP }}:/home/ubuntu/PolybotServicePython/.env
+          echo "📝 Contents of .env file:"
+          cat .env
+
+      - name: SSH and deploy to PROD
+        run: |
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP}}:/home/ubuntu/PolybotServicePython/.env
 
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} << 'EOF'
             echo "📁 Cloning or updating repo"
@@ -40,6 +92,9 @@ jobs:
               git clone --branch main https://github.com/${{ github.repository }} PolybotServicePython
               cd PolybotServicePython
             fi
+
+            echo "📝 Checking .env file contents on server:"
+            cat .env
 
             echo "[+] Checking for Docker"
             if ! command -v docker &> /dev/null; then
@@ -61,6 +116,6 @@ jobs:
               echo "✅ OpenTelemetry metrics are exposed"
             else
               echo "⚠️ Metrics not available"
-              docker logs $(docker ps -qf "name=otelcol")
+              docker logs $(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
             fi
           EOF
