@@ -24,7 +24,7 @@ jobs:
           echo "🔧 Image name: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
-          echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "image=$IMAGE_NAME" >> "${GITHUB_OUTPUT}"
       - name: 🔍 Debug image output  # ← this is your debug step
         run: |
           echo "Image output from build-image: ${{ steps.build-image.outputs.image }}"
