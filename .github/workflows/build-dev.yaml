@@ -57,16 +57,31 @@ jobs:
       image: ${{ steps.build-image.outputs.image }}
 
     steps:
-      - name: Set image output
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
         id: build-image
         run: |
-          IMAGE_NAME="test/polybot-dev:${{ github.run_number }}"
-          echo "Setting image to $IMAGE_NAME"
-          echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          echo "🔧 Built image: $IMAGE_NAME"
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+          echo "image=$IMAGE_NAME" >> "${GITHUB_OUTPUT}"
 
   deploy:
     needs: build
     uses: ./.github/workflows/deployment-dev.yaml
     with:
       image: ${{ needs.build.outputs.image }}
+    secrets:
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      POLYBOT_EC2_IP_DEV: ${{ secrets.POLYBOT_EC2_IP_DEV }}
+      TELEGRAM_BOT_TOKEN_DEV: ${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}
+      BOT_APP_URL_DEV: ${{ secrets.BOT_APP_URL_DEV }}
+      YOLO_SERVER_URL_DEV: ${{ secrets.YOLO_SERVER_URL_DEV }}
+      S3_BUCKET_NAME_DEV: ${{ secrets.S3_BUCKET_NAME_DEV }}
 

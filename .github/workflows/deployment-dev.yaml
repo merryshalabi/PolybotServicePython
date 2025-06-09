@@ -7,19 +7,19 @@ on:
       image:
         required: true
         type: string
-#    secrets:
-#      EC2_SSH_KEY:
-#        required: true
-#      POLYBOT_EC2_IP_DEV:
-#        required: true
-#      TELEGRAM_BOT_TOKEN_DEV:
-#        required: true
-#      BOT_APP_URL_DEV:
-#        required: true
-#      YOLO_SERVER_URL_DEV:
-#        required: true
-#      S3_BUCKET_NAME_DEV:
-#        required: true
+    secrets:
+      EC2_SSH_KEY:
+        required: true
+      POLYBOT_EC2_IP_DEV:
+        required: true
+      TELEGRAM_BOT_TOKEN_DEV:
+        required: true
+      BOT_APP_URL_DEV:
+        required: true
+      YOLO_SERVER_URL_DEV:
+        required: true
+      S3_BUCKET_NAME_DEV:
+        required: true
 
 jobs:
   deploy:
