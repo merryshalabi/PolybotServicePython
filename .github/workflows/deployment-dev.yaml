@@ -1,40 +1,76 @@
-name: Polybot Build Dev
+name: Polybot Deploy Dev
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+
+    secrets:
+      EC2_SSH_KEY:
+        required: true
+      POLYBOT_EC2_IP_DEV:
+        required: true
+      TELEGRAM_BOT_TOKEN_DEV:
+        required: true
+      BOT_APP_URL_DEV:
+        required: true
+      YOLO_SERVER_URL_DEV:
+        required: true
+      S3_BUCKET_NAME_DEV:
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      image:
+        required: true
+        type: string
+        description: 'Docker image name to deploy'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Log in to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Download image name artifact (fallback)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-name
+          path: ./
+        continue-on-error: true
 
-      - name: Build and push Docker image
+      - name: Setup SSH key
         run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
-          echo "🔧 Built image: $IMAGE_NAME"
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
-          
-          # Save image name to file for next step
-          echo "$IMAGE_NAME" > image_name.txt
-
-      - name: Deploy to Dev
-        run: |
-          IMAGE_NAME=$(cat image_name.txt)
-          echo "🚀 Deploying image: $IMAGE_NAME"
-          
-          # Setup SSH key
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
+
+      - name: Determine image name
+        id: get-image
+        run: |
+          # Try input first
+          if [ -n "${{ inputs.image }}" ]; then
+            IMAGE_NAME="${{ inputs.image }}"
+            echo "✅ Using input image: $IMAGE_NAME"
+          # Fallback to artifact
+          elif [ -f "image_name.txt" ]; then
+            IMAGE_NAME=$(cat image_name.txt)
+            echo "✅ Using artifact image: $IMAGE_NAME"
+          else
+            echo "❌ No image name found!"
+            exit 1
+          fi
           
-          # Create .env file
+          echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "🚀 Final image name: $IMAGE_NAME"
+
+      - name: Create .env file
+        run: |
+          IMAGE_NAME="${{ steps.get-image.outputs.image }}"
+          
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
@@ -43,8 +79,9 @@ jobs:
           
           echo "📝 Contents of .env file:"
           cat .env
-          
-          # Deploy using SSH
+
+      - name: SSH and deploy using Docker Compose
+        run: |
           scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
 
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
