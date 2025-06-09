@@ -53,7 +53,7 @@ jobs:
       image: ${{ needs.build.outputs.image }}
     secrets:
       EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY}}
-      POLYBOT_EC2_IP_PROD: ${{ secrets.POLYBOT_EC2_IP }}
+      POLYBOT_EC2_IP: ${{ secrets.POLYBOT_EC2_IP }}
       TELEGRAM_BOT_TOKEN_PROD: ${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}
       BOT_APP_URL_PROD: ${{ secrets.BOT_APP_URL_PROD }}
       YOLO_SERVER_URL_PROD: ${{ secrets.YOLO_SERVER_URL_PROD }}
