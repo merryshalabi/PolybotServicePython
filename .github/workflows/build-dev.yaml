@@ -26,11 +26,6 @@ jobs:
           docker push $IMAGE_NAME
           echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
-      - name: Export image name
-        id: export-image
-        run: |
-          echo "image=${{ steps.build-image.outputs.image }}" >> "$GITHUB_OUTPUT"
-
   deploy:
     needs: build
     uses: ./.github/workflows/deployment-dev.yaml
