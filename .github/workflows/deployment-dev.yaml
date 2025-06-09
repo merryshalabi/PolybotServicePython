@@ -34,12 +34,27 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: Debug - print image
+      - name: Debug - print ALL inputs and context
         run: |
-          echo "🚀 Image received by deploy: ${{ inputs.image }}"
+          echo "🚀 Image received by deploy: '${{ inputs.image }}'"
+          echo "🔍 Length of image string: ${#IMAGE_VAR}"
+          echo "🔍 Is image empty? $([ -z '${{ inputs.image }}' ] && echo 'YES' || echo 'NO')"
+          echo "🔍 Inputs context:"
+          echo "IMAGE_INPUT=${{ inputs.image }}"
+          echo "🔍 GitHub context:"
+          echo "GITHUB_ACTOR=${{ github.actor }}"
+          echo "GITHUB_RUN_NUMBER=${{ github.run_number }}"
+        env:
+          IMAGE_VAR: ${{ inputs.image }}
 
       - name: Create .env file and deploy
         run: |
+          echo "Creating .env file..."
+          if [ -z "${{ inputs.image }}" ]; then
+            echo "❌ ERROR: Image input is empty!"
+            exit 1
+          fi
+          
           echo "IMG_NAME=${{ inputs.image }}" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
@@ -64,7 +79,7 @@ jobs:
               cd PolybotServicePython
             fi
           
-            echo "📝 Checking .env file contents:"
+            echo "📝 Checking .env file contents on server:"
             cat .env
                     
             echo "[+] Checking for Docker"
