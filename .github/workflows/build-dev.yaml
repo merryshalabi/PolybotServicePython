@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.set.outputs.image }}
+      image: ${{ steps.export.outputs.image }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,13 +18,16 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
-        id: set
         run: |
           IMG_NAME=merryshalabi/polybot-dev:${{ github.run_number }}
           echo "🔧 Image name: $IMG_NAME"
           docker build -t $IMG_NAME .
           docker push $IMG_NAME
-          echo "::set-output name=image::$IMG_NAME"
+          echo "IMAGE_NAME=$IMG_NAME" >> $GITHUB_ENV
+
+      - name: Export image name
+        id: export
+        run: echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
