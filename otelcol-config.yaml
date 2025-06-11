@@ -1,15 +1,8 @@
-# otelcol-config.yaml
 receivers:
-  hostmetrics:
-    collection_interval: 15s
-    scrapers:
-      cpu:
-      memory:
-      disk:
-      filesystem:
-      load:
-      network:
-      processes:
+  otlp:
+    protocols:
+      http:
+      grpc:
 
 exporters:
   prometheus:
@@ -18,5 +11,5 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [hostmetrics]
+      receivers: [otlp]
       exporters: [prometheus]
