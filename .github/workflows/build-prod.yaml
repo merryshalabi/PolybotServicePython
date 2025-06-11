@@ -17,12 +17,25 @@ jobs:
       - name: Log in to DockerHub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image with curl
         run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod:${{ github.run_number }}
-          echo "🔧 Built image: $IMAGE_NAME"
-          docker build -t $IMAGE_NAME .
+          BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev-base:${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+      
+          echo "🔧 Building base image (original)"
+          docker build -t $BASE_IMAGE .
+      
+          echo "🔧 Creating patched Dockerfile with curl"
+          echo "FROM $BASE_IMAGE" > Dockerfile.patched
+          echo "RUN apt-get update && apt-get install -y curl" >> Dockerfile.patched
+      
+          echo "🔧 Building final image with curl: $IMAGE_NAME"
+          docker build -t $IMAGE_NAME -f Dockerfile.patched .
+      
+          echo "📤 Pushing final image to DockerHub"
           docker push $IMAGE_NAME
+      
+          echo "$IMAGE_NAME" > image_name.txt
           
           # Save to file for artifact
           echo "$IMAGE_NAME" > image_name.txt
