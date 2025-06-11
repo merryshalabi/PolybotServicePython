@@ -7,14 +7,11 @@ services:
     env_file: .env
     networks:
       - observability
-
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet http://localhost:8000 || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/metrics"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
-
 
   otelcol:
     image: otel/opentelemetry-collector-contrib:latest
