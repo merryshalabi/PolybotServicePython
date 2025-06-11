@@ -1,8 +1,10 @@
 receivers:
-  otlp:
-    protocols:
-      http:
-      grpc:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'polybot'
+          static_configs:
+            - targets: ['polybot:8000']
 
 exporters:
   prometheus:
@@ -11,5 +13,5 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [otlp]
+      receivers: [prometheus]
       exporters: [prometheus]
