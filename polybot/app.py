@@ -1,22 +1,17 @@
 import flask
 from flask import request
 import os
-from bot import ImageProcessingBot
-from prometheus_flask_exporter import PrometheusMetrics
+from bot import ImageProcessingBot  # Assuming this is your handler class
 
 app = flask.Flask(__name__)
-app.url_map.strict_slashes = False
+app.url_map.strict_slashes = False  # Accept /TOKEN and /TOKEN/ the same
 
-# Expose Prometheus metrics
-metrics = PrometheusMetrics(app)
-
-# # Optional: Custom counter
-# webhook_counter = Counter('telegram_webhook_calls_total', 'Total Telegram webhook POSTs received')
-
+# Load config from env
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
 YOLO_SERVER_URL = os.environ['YOLO_SERVER_URL']
 
+# INIT BOT HERE — before any route
 bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, yolo_server_url=YOLO_SERVER_URL)
 
 @app.route('/', methods=['GET'])
@@ -27,10 +22,10 @@ def index():
 def health():
     return 'ok', 200
 
+# Route without trailing AND with trailing slash
 @app.route(f'/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
 @app.route(f'/{TELEGRAM_BOT_TOKEN}/', methods=['POST'])
 def webhook():
-    webhook_counter.inc()
     req = request.get_json()
     bot.handle_message(req['message'])
     return 'Ok'
