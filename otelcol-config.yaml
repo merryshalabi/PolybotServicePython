@@ -6,6 +6,16 @@ receivers:
           static_configs:
             - targets: ['polybot:8000']
 
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      filesystem:
+      load:
+      network:
+
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
@@ -13,5 +23,5 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [prometheus]
+      receivers: [prometheus, hostmetrics]
       exporters: [prometheus]
