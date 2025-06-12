@@ -26,11 +26,11 @@ services:
     environment:
       - HOST_PROC=/host_proc
       - HOST_SYS=/host_sys
-    networks:
-      - observability
+    network_mode: host
     depends_on:
       polybot:
         condition: service_healthy
+
 
 
 networks:
