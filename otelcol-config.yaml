@@ -4,7 +4,18 @@ receivers:
       scrape_configs:
         - job_name: 'polybot'
           static_configs:
-            - targets: ['polybot:8000']
+            - targets: ['polybot:8000']  # or 'localhost:8000' if using network_mode: host
+
+  hostmetrics:
+    collection_interval: 10s
+    root_path: /host_proc
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      filesystem:
+      load:
+      network:
 
 exporters:
   prometheus:
@@ -13,5 +24,5 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [prometheus]
+      receivers: [prometheus, hostmetrics]
       exporters: [prometheus]

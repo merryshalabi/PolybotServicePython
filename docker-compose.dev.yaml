@@ -21,11 +21,17 @@ services:
       - "8889:8889"
     volumes:
       - ./otelcol-config.yaml:/etc/otelcol/config.yaml
-    networks:
-      - observability
+      - /proc:/host_proc:ro
+      - /sys:/host_sys:ro
+    environment:
+      - HOST_PROC=/host_proc
+      - HOST_SYS=/host_sys
+    network_mode: host
     depends_on:
       polybot:
         condition: service_healthy
+
+
 
 networks:
   observability:
