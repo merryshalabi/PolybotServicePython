@@ -22,17 +22,17 @@ jobs:
           BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev-base:${{ github.run_number }}
           IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
       
-          echo "🔧 Building base image (original)"
+          echo " Building base image (original)"
           docker build -t $BASE_IMAGE .
       
-          echo "🔧 Creating patched Dockerfile with curl"
+          echo "Creating patched Dockerfile with curl"
           echo "FROM $BASE_IMAGE" > Dockerfile.patched
           echo "RUN apt-get update && apt-get install -y curl" >> Dockerfile.patched
       
-          echo "🔧 Building final image with curl: $IMAGE_NAME"
+          echo "Building final image with curl: $IMAGE_NAME"
           docker build -t $IMAGE_NAME -f Dockerfile.patched .
       
-          echo "📤 Pushing final image to DockerHub"
+          echo " Pushing final image to DockerHub"
           docker push $IMAGE_NAME
       
           echo "$IMAGE_NAME" > image_name.txt
@@ -45,7 +45,7 @@ jobs:
         run: |
           IMAGE_NAME=$(cat image_name.txt)
           echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
-          echo "✅ Saved image output: $IMAGE_NAME"
+          echo "Saved image output: $IMAGE_NAME"
 
       - name: Upload image name as artifact
         uses: actions/upload-artifact@v4
