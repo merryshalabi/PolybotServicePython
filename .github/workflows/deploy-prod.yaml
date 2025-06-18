@@ -16,7 +16,7 @@ on:
         required: true
       BOT_APP_URL_PROD:
         required: true
-      YOLO_SERVER_URL_PROD:
+      SQS_QUEUE_URL_PROD:
         required: true
       S3_BUCKET_NAME_PROD:
         required: true
@@ -72,7 +72,7 @@ jobs:
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_PROD }}" >> .env
-          echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_PROD }}" >> .env
+          echo "SQS_QUEUE_URL=${{ secrets.SQS_QUEUE_URL_PROD }}" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_PROD }}" >> .env
 
           echo "📝 Contents of .env file:"

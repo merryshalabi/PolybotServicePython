@@ -30,5 +30,18 @@ def webhook():
     bot.handle_message(req['message'])
     return 'Ok'
 
+@app.route('/predictions/<prediction_id>', methods=['POST'])
+def receive_prediction(prediction_id):
+    data = request.json
+    chat_id = data.get("chat_id")
+    labels = data.get("labels", [])
+
+    if not chat_id:
+        return "Missing chat_id", 400
+
+    detected_objects = ", ".join(labels) if labels else "Nothing detected"
+    bot.send_text(chat_id, f" Detection result for {prediction_id}: {detected_objects}")
+    return "Received", 200
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
