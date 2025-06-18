@@ -82,7 +82,7 @@ class QuoteBot(Bot):
 
 
 class ImageProcessingBot(Bot):
-    def __init__(self, token, telegram_chat_url,yolo_server_url=None):
+    def __init__(self, token, telegram_chat_url):
         super().__init__(token, telegram_chat_url)
         self.media_groups = {}
         self.new_users = set()
@@ -92,7 +92,6 @@ class ImageProcessingBot(Bot):
             'rotate', 'segment', 'salt and pepper', 'rotate2',
             'brighten', 'darken', 'invert','detect'
         ]
-        self.yolo_server_url = yolo_server_url
         self.s3_bucket_name = os.environ.get("S3_BUCKET_NAME")
         self.s3_client = boto3.client("s3", region_name="eu-west-2")
         self.sqs_client = boto3.client("sqs", region_name="eu-west-2")
@@ -136,46 +135,46 @@ class ImageProcessingBot(Bot):
             logger.info(f"Attempting to upload {file_path} to bucket {self.s3_bucket_name}")
             return None
 
-    def is_yolo_server_healthy(self):
+    # def is_yolo_server_healthy(self):
+    #
+    #     if not self.yolo_server_url:
+    #         logger.error("YOLO_SERVER_URL is not set in environment variables.")
+    #         return False
+    #
+    #     health_url = f"{self.yolo_server_url}/health"
+    #     try:
+    #         response = requests.get(health_url)
+    #         return response.status_code == 200 and response.json().get("status") == "ok"
+    #     except requests.RequestException:
+    #         return False
 
-        if not self.yolo_server_url:
-            logger.error("YOLO_SERVER_URL is not set in environment variables.")
-            return False
 
-        health_url = f"{self.yolo_server_url}/health"
-        try:
-            response = requests.get(health_url)
-            return response.status_code == 200 and response.json().get("status") == "ok"
-        except requests.RequestException:
-            return False
-
-
-    def detect_objects_in_image(self, image_name):
-        logger.info(f"Sending image name to YOLO server: {image_name}")
-
-        if not self.yolo_server_url:
-            logger.error("YOLO_SERVER_URL is not set in environment variables.")
-            return {"error": "YOLO server URL is not configured"}
-
-        detect_url = f"{self.yolo_server_url}/predict"
-
-        if not self.is_yolo_server_healthy():
-            logger.error("YOLO server is unhealthy or unreachable.")
-            return {"error": "YOLO server is currently unavailable"}
-
-        try:
-            response = requests.post(detect_url, json={"image_name": image_name})
-            logger.info(f"YOLO server response code: {response.status_code}")
-            if response.status_code == 200:
-                logger.success("✅ YOLO detection success")
-                return response.json()
-            else:
-                logger.warning(f"YOLO detection failed: {response.text}")
-                return {"error": "Failed to detect objects in the image"}
-
-        except Exception as e:
-            logger.exception(f"Exception when calling YOLO server: {e}")
-            return {"error": "Exception during YOLO detection"}
+    # def detect_objects_in_image(self, image_name):
+    #     logger.info(f"Sending image name to YOLO server: {image_name}")
+    #
+    #     if not self.yolo_server_url:
+    #         logger.error("YOLO_SERVER_URL is not set in environment variables.")
+    #         return {"error": "YOLO server URL is not configured"}
+    #
+    #     detect_url = f"{self.yolo_server_url}/predict"
+    #
+    #     if not self.is_yolo_server_healthy():
+    #         logger.error("YOLO server is unhealthy or unreachable.")
+    #         return {"error": "YOLO server is currently unavailable"}
+    #
+    #     try:
+    #         response = requests.post(detect_url, json={"image_name": image_name})
+    #         logger.info(f"YOLO server response code: {response.status_code}")
+    #         if response.status_code == 200:
+    #             logger.success("✅ YOLO detection success")
+    #             return response.json()
+    #         else:
+    #             logger.warning(f"YOLO detection failed: {response.text}")
+    #             return {"error": "Failed to detect objects in the image"}
+    #
+    #     except Exception as e:
+    #         logger.exception(f"Exception when calling YOLO server: {e}")
+    #         return {"error": "Exception during YOLO detection"}
 
 
     def handle_message(self, msg):
