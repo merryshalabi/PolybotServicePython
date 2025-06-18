@@ -9,5 +9,6 @@ COPY . .
 
 ENV PYTHONPATH=/app
 
+EXPOSE 8000
 
 CMD ["python3", "polybot/app.py"]
