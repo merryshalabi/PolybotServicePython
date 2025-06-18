@@ -39,9 +39,20 @@ def receive_prediction(prediction_id):
     if not chat_id:
         return "Missing chat_id", 400
 
+    # Try to get image number from bot's map
+    image_number = None
+    if hasattr(bot, "prediction_number_map") and prediction_id in bot.prediction_number_map:
+        chat_id, image_number = bot.prediction_number_map[prediction_id]
+
+    if image_number is not None:
+        header = f"Detection result for Image {image_number}:"
+    else:
+        header = f"Detection result:"
+
     detected_objects = ", ".join(labels) if labels else "Nothing detected"
-    bot.send_text(chat_id, f" Detection result for {prediction_id}: {detected_objects}")
+    bot.send_text(chat_id, f"{header} {detected_objects}")
     return "Received", 200
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)

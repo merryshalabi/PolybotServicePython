@@ -85,6 +85,8 @@ class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):
         super().__init__(token, telegram_chat_url)
         self.media_groups = {}
+        self.image_counter = {}
+        self.prediction_number_map = {}
         self.new_users = set()
         self.processed_media_groups = set()
         self.valid_filters = [
@@ -99,20 +101,23 @@ class ImageProcessingBot(Bot):
 
         logger.info(f"Loaded S3_BUCKET_NAME from env: {self.s3_bucket_name}")
 
-    def send_to_sqs(self, prediction_id, chat_id, image_name):
+    def send_to_sqs(self, prediction_id, chat_id, image_name, image_number=None):
         message = {
             "prediction_id": prediction_id,
             "chat_id": chat_id,
             "image_s3_url": f"https://{self.s3_bucket_name}.s3.eu-west-2.amazonaws.com/{image_name}",
             "timestamp": datetime.utcnow().isoformat()
         }
+
+        if image_number is not None:
+            message["image_number"] = image_number
+
         response = self.sqs_client.send_message(
             QueueUrl=self.sqs_queue_url,
             MessageBody=json.dumps(message)
         )
-        logger.success(f"✅ Sent prediction {prediction_id} to SQS.")
+        logger.success(f"✅ Sent prediction {prediction_id} (image {image_number}) to SQS.")
         return response
-
 
     def upload_to_s3(self, file_path):
         try:
@@ -123,58 +128,17 @@ class ImageProcessingBot(Bot):
             image_name = os.path.basename(file_path)
             logger.info(f"Attempting to upload {file_path} as {image_name} to bucket {self.s3_bucket_name}")
             self.s3_client.upload_file(file_path, self.s3_bucket_name, image_name)
-            logger.success(f"✅ Uploaded {image_name} to S3 bucket {self.s3_bucket_name}")
+            logger.success(f" Uploaded {image_name} to S3 bucket {self.s3_bucket_name}")
             return image_name
 
         except NoCredentialsError:
-            logger.error("❌ AWS credentials not found.")
+            logger.error("AWS credentials not found.")
             logger.info(f"Attempting to upload {file_path} to bucket {self.s3_bucket_name}")
             return None
         except Exception as e:
-            logger.exception(f"❌ Unexpected error during upload to S3: {e}")
+            logger.exception(f"Unexpected error during upload to S3: {e}")
             logger.info(f"Attempting to upload {file_path} to bucket {self.s3_bucket_name}")
             return None
-
-    # def is_yolo_server_healthy(self):
-    #
-    #     if not self.yolo_server_url:
-    #         logger.error("YOLO_SERVER_URL is not set in environment variables.")
-    #         return False
-    #
-    #     health_url = f"{self.yolo_server_url}/health"
-    #     try:
-    #         response = requests.get(health_url)
-    #         return response.status_code == 200 and response.json().get("status") == "ok"
-    #     except requests.RequestException:
-    #         return False
-
-
-    # def detect_objects_in_image(self, image_name):
-    #     logger.info(f"Sending image name to YOLO server: {image_name}")
-    #
-    #     if not self.yolo_server_url:
-    #         logger.error("YOLO_SERVER_URL is not set in environment variables.")
-    #         return {"error": "YOLO server URL is not configured"}
-    #
-    #     detect_url = f"{self.yolo_server_url}/predict"
-    #
-    #     if not self.is_yolo_server_healthy():
-    #         logger.error("YOLO server is unhealthy or unreachable.")
-    #         return {"error": "YOLO server is currently unavailable"}
-    #
-    #     try:
-    #         response = requests.post(detect_url, json={"image_name": image_name})
-    #         logger.info(f"YOLO server response code: {response.status_code}")
-    #         if response.status_code == 200:
-    #             logger.success("✅ YOLO detection success")
-    #             return response.json()
-    #         else:
-    #             logger.warning(f"YOLO detection failed: {response.text}")
-    #             return {"error": "Failed to detect objects in the image"}
-    #
-    #     except Exception as e:
-    #         logger.exception(f"Exception when calling YOLO server: {e}")
-    #         return {"error": "Exception during YOLO detection"}
 
 
     def handle_message(self, msg):
@@ -212,9 +176,23 @@ class ImageProcessingBot(Bot):
                     self.send_text(msg['chat']['id'], "Failed to upload image to cloud.")
                     return
 
+                chat_id = msg['chat']['id']
                 prediction_id = str(uuid.uuid4())
-                self.send_text(msg['chat']['id'], "🕐 Image received. You'll get results soon.")
-                self.send_to_sqs(prediction_id, msg['chat']['id'], image_name)
+
+                # Increment and track image number per user
+                if chat_id not in self.image_counter:
+                    self.image_counter[chat_id] = 1
+                else:
+                    self.image_counter[chat_id] += 1
+
+                image_number = self.image_counter[chat_id]
+                self.prediction_number_map[prediction_id] = (chat_id, image_number)
+
+                # Notify the user
+                self.send_text(chat_id, f"🕐 Image {image_number} received. You'll get results soon.")
+
+                self.send_to_sqs(prediction_id, chat_id, image_name, image_number=image_number)
+
                 return
 
 
