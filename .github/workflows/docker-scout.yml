@@ -8,8 +8,10 @@ on:
 jobs:
   scout:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -17,21 +19,22 @@ jobs:
       - name: Install Docker Scout CLI
         run: |
           curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+          echo "$HOME/.docker/cli-plugins" >> $GITHUB_PATH
 
       - name: Build Docker image
         run: |
           IMAGE_TAG=polybot:${{ github.sha }}
           docker build -t $IMAGE_TAG .
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-      - name: Run Docker Scout for high/critical CVEs
+      - name: Run Docker Scout for HIGH/CRITICAL CVEs
         run: |
-          docker scout cves $IMAGE_TAG --severities high,critical --exit-code
-
+          docker scout cves ${{ env.IMAGE_TAG }} --only-severities=high,critical --exit-code
 
       - name: Generate SBOM
         if: always()
         run: |
-          docker scout sbom polybot:${{ github.sha }} > scout_sbom.json
+          docker scout sbom ${{ env.IMAGE_TAG }} > scout_sbom.json
 
       - name: Upload SBOM as artifact
         if: always()
@@ -39,4 +42,3 @@ jobs:
         with:
           name: scout-sbom
           path: scout_sbom.json
-
