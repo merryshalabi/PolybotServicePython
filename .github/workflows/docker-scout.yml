@@ -30,6 +30,12 @@ jobs:
           sudo apt-get install -y docker-ce-cli
           docker --version
 
+      - name: Install Docker Scout CLI
+        run: |
+          curl -Lo docker-scout https://github.com/docker/scout-cli/releases/latest/download/docker-scout_linux_amd64
+          chmod +x docker-scout
+          sudo mv docker-scout /usr/local/bin/docker-scout
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -56,7 +62,7 @@ jobs:
 
       - name: Generate SBOM
         run: |
-          docker scout sbom ${{ env.IMAGE_TAG }} > scout_sbom.json
+          docker-scout sbom ${{ env.IMAGE_TAG }} > scout_sbom.json
 
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v4
