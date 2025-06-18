@@ -1,0 +1,77 @@
+name: Docker Scout Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install latest Docker CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl gnupg lsb-release
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce-cli
+          docker --version
+
+      - name: Install Docker Scout CLI
+        run: |
+          curl -s https://api.github.com/repos/docker/scout-cli/releases/latest \
+            | grep "browser_download_url.*linux_amd64.tar.gz" \
+            | cut -d '"' -f 4 \
+            | xargs curl -Lo docker-scout.tar.gz
+      
+          tar -xzf docker-scout.tar.gz
+          chmod +x docker-scout
+          sudo mv docker-scout /usr/local/bin/docker-scout
+
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=polybot:${{ github.sha }}
+          docker build -t $IMAGE_TAG .
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Run Docker Scout vulnerability scan
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ env.IMAGE_TAG }}
+          only-severities: critical
+          exit-code: true
+          format: json
+          summary: true
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate SBOM
+        run: |
+          docker-scout sbom ${{ env.IMAGE_TAG }} > scout_sbom.json
+
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scout-sbom
+          path: scout_sbom.json
