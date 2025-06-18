@@ -16,7 +16,7 @@ on:
         required: true
       BOT_APP_URL_DEV:
         required: true
-      SQS_QUEUE_URL_DEV:
+      YOLO_SERVER_URL_DEV:
         required: true
       S3_BUCKET_NAME_DEV:
         required: true
@@ -74,7 +74,7 @@ jobs:
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
-          echo "SQS_QUEUE_URL=${{ secrets.SQS_QUEUE_URL_DEV }}" >> .env
+          echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
           
           echo "📝 Contents of .env file:"

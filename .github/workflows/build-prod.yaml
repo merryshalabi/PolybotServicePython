@@ -69,5 +69,5 @@ jobs:
       POLYBOT_EC2_IP: ${{ secrets.POLYBOT_EC2_IP }}
       TELEGRAM_BOT_TOKEN_PROD: ${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}
       BOT_APP_URL_PROD: ${{ secrets.BOT_APP_URL_PROD }}
-      SQS_QUEUE_URL_PROD: ${{ secrets.SQS_QUEUE_URL_PROD }}
+      YOLO_SERVER_URL_PROD: ${{ secrets.YOLO_SERVER_URL_PROD }}
       S3_BUCKET_NAME_PROD: ${{ secrets.S3_BUCKET_NAME_PROD }}
