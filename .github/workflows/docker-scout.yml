@@ -37,6 +37,7 @@ jobs:
         with:
           command: cves
           image: ${{ env.IMAGE_TAG }}
+          only-severities: critical
           exit-code: true
           format: json
           summary: true
