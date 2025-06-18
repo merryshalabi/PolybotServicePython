@@ -27,6 +27,7 @@ jobs:
         run: |
           docker scout cves $IMAGE_TAG --severities high,critical --exit-code
 
+
       - name: Upload SBOM as artifact
         if: always()
         run: |
