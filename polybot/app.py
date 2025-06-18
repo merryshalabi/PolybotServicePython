@@ -10,7 +10,6 @@ app.url_map.strict_slashes = False  # Accept /TOKEN and /TOKEN/ the same
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
 
-
 # INIT BOT HERE — before any route
 bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL)
 
