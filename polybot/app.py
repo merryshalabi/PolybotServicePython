@@ -9,10 +9,10 @@ app.url_map.strict_slashes = False  # Accept /TOKEN and /TOKEN/ the same
 # Load config from env
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
-YOLO_SERVER_URL = os.environ['YOLO_SERVER_URL']
+
 
 # INIT BOT HERE — before any route
-bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, yolo_server_url=YOLO_SERVER_URL)
+bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL)
 
 @app.route('/', methods=['GET'])
 def index():
