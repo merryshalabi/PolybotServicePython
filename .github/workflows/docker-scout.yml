@@ -27,12 +27,17 @@ jobs:
           docker build -t $IMAGE_TAG .
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-      - name: Run Docker Scout (fail on HIGH/CRITICAL)
+      - name: Run Docker Scout vulnerability scan
         uses: docker/scout-action@v1
         with:
+          command: cves
           image: ${{ env.IMAGE_TAG }}
           only-severities: critical,high
           exit-code: true
+          format: json
+          summary: true
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate SBOM
         run: |
