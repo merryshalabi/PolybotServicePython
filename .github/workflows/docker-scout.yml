@@ -38,11 +38,11 @@ jobs:
           command: cves
           image: ${{ env.IMAGE_TAG }}
           only-severities: critical,high
+          exit-code: true
           format: json
           summary: true
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
 
       - name: Generate SBOM
         run: |
