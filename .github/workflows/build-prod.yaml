@@ -19,8 +19,8 @@ jobs:
 
       - name: Build and push Docker image with curl
         run: |
-          BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev-base:${{ github.run_number }}
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod-base:${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod:${{ github.run_number }}
       
           echo " Building base image (original)"
           docker build -t $BASE_IMAGE .
