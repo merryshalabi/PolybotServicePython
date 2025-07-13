@@ -19,8 +19,8 @@ jobs:
 
       - name: Build and push Docker image with curl
         run: |
-          BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev-base:${{ github.run_number }}
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:${{ github.run_number }}
+          BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod-base:${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod:${{ github.run_number }}
       
           echo " Building base image (original)"
           docker build -t $BASE_IMAGE .
@@ -58,6 +58,28 @@ jobs:
           echo "🔍 Step output: ${{ steps.save-image.outputs.image }}"
           echo "🔍 File contents:"
           cat image_name.txt
+
+      - name: Update image in polybot-infra repo
+        run: |
+          IMAGE_TAG=${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-prod:$IMAGE_TAG
+
+          git config --global user.email "bot@github.com"
+          git config --global user.name "GitHub Actions Bot"
+
+          git clone https://x-access-token:${{ secrets.POLYBOT_INFRA_PAT }}@github.com/merryshalabi/PolybotInfra.git
+          cd polybot-infra/polybot-k8s/prod/Polybot
+
+          echo "Patching image in prod deployment.yaml to $IMAGE_NAME"
+          sed -i "s|image: .*polybot-prod:.*|image: $IMAGE_NAME|" deployment.yaml
+
+          git add deployment.yaml
+          git commit -m "chore: update Polybot prod image to $IMAGE_TAG"
+          git push origin main
+
+          
+          
+      
 
   deploy:
     needs: build

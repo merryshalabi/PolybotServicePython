@@ -1,0 +1,32 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# macOS files
+.DS_Store
+
+# VSCode / PyCharm / IDE config
+.idea/
+.vscode/
+
+# Git files
+.git/
+.gitignore
+
+# Env and secrets
+.env
+
+# Logs
+*.log
+
+# Test artifacts
+photos/
+polybot/photos/
+polybot/test/
