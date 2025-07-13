@@ -58,6 +58,27 @@ jobs:
           echo "🔍 File contents:"
           cat image_name.txt
 
+      - name: Update image in polybot-infra repo
+        run: |
+          IMAGE_TAG=${{ github.run_number }}
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/polybot-dev:$IMAGE_TAG
+
+          git config --global user.email "bot@github.com"
+          git config --global user.name "GitHub Actions Bot"
+
+          git clone https://x-access-token:${{ secrets.POLYBOT_INFRA_PAT }}@github.com/merryshalabi/PolybotInfra.git
+          cd polybot-infra/polybot-k8s/dev/Polybot
+
+          echo "Patching image in dev deployment.yaml to $IMAGE_NAME"
+          sed -i "s|image: .*polybot-dev:.*|image: $IMAGE_NAME|" deployment.yaml
+
+          git add deployment.yaml
+          git commit -m "chore: update Polybot dev image to $IMAGE_TAG"
+          git push origin main
+
+          
+      
+
   deploy:
     needs: build
     uses: ./.github/workflows/deployment-dev.yaml
