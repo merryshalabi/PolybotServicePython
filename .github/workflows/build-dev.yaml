@@ -67,7 +67,7 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
 
           git clone https://x-access-token:${{ secrets.POLYBOT_INFRA_PAT }}@github.com/merryshalabi/PolybotInfra.git
-          cd polybot-infra/polybot-k8s/dev/Polybot
+          cd PolybotInfra/polybot-k8s/dev/Polybot
 
           echo "Patching image in dev deployment.yaml to $IMAGE_NAME"
           sed -i "s|image: .*polybot-dev:.*|image: $IMAGE_NAME|" deployment.yaml
